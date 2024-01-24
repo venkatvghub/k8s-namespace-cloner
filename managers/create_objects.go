@@ -3,6 +3,7 @@ package managers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -535,4 +536,134 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
 		fmt.Printf("Waiting for namespace %s to be deleted...\n", namespace)
 		time.Sleep(5 * time.Second) // Adjust the wait interval as needed
 	}
+}
+
+func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+	// Create the target namespace if it doesn't exist
+	_, err := clientset.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: targetNamespace,
+		},
+	}, metav1.CreateOptions{})
+
+	if err != nil && !strings.Contains(err.Error(), "AlreadyExists") {
+		fmt.Printf("Error creating namespace %s: %v\n", targetNamespace, err)
+		return err
+	}
+
+	err = CloneConfigMap(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		// Remove the Target Namespace
+		// TODO: Probably move the namespace deletion to a go routine for returning faster?
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+	err = CloneSecret(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = CloneDeployments(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = CloneServices(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		fmt.Printf("Error cloning Services: %v\n", err)
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = CloneCronJobs(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		fmt.Printf("Error cloning CronJobs: %v\n", err)
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = CloneJobs(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		fmt.Printf("Error cloning Jobs: %v\n", err)
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = CloneSTS(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		fmt.Printf("Error cloning STS: %v\n", err)
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = CloneIngresses(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		fmt.Printf("Error cloning Ingress: %v\n", err)
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = ClonePDB(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		fmt.Printf("Error cloning PDB: %v\n", err)
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	err = CloneHPA(clientset, sourceNamespace, targetNamespace)
+	if err != nil {
+		fmt.Printf("Error cloning HPA: %v\n", err)
+		// Remove the Target Namespace
+		err = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		}
+		return err
+	}
+
+	// Enable the below for testing and cleanup
+	/*err = RemoveNamespace(clientset, targetNamespace)
+	if err != nil {
+		fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		return err
+	}
+	fmt.Printf("Removed Namespace:%s\n", targetNamespace)*/
+	return nil
 }

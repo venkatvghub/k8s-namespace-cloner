@@ -16,8 +16,11 @@ The `k8s-namespace-cloner` tool facilitates the duplication of resources from on
 Clone the repository to your local machine:
 ```
 go run main.go
-curl http://localhost:8080/api/namespaces ## List Namespaces
-curl http://localhost:8080/api/discover/myns/deployments ## List Deployments for namespace <myns>
-curl -X POST -H "Content-Type: application/json" -d '{"targetNamespace": "target"}' http://localhost:8080/api/clone/myns ## Clones the source namespace <myns> to a target namespace <targer>
+curl http://localhost:8080//api/v1/namespaces ## List Namespaces
+curl http://localhost:8080/api/v1/namespaces/:namespace/deployments ## List Deployments for namespace
+curl -X POST -H "Content-Type: application/json" -d '{"targetNamespace": "targetNamespace"}' http://localhost:8080/api/v1/namespaces/:sourceNamespace/clone ## Clones the source namespace to a target namespace
 ```
+Apply the file `rolebinding.yaml` onto the cluster for giving full operations to this service account for running the code in cluster
+```kubectl apply -f rolebinding.yaml```
+
 
