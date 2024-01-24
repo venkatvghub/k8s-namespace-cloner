@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      containers:
+      - name: {{ .Values.name }}
+        image: {{ .Values.global.image }}
+        ports:
+        - containerPort: 80  # Default HTTP port
+        env:
+        - name: CONFIG_VALUE
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Values.global.configMapName }}
+              key: config_key
+        - name: SECRET_VALUE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.global.secretName }}
+              key: secret_key
+

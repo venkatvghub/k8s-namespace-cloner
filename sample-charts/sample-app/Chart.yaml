@@ -1,0 +1,20 @@
+apiVersion: v2
+name: sample-app
+description: A customizable Helm chart for my application
+
+version: 1.0.0
+
+maintainers:
+  - name: Your Name
+    email: your_email@example.com
+
+# ... other dependencies (if any)
+
+values:
+  # Reference the custom values.yaml file
+  - include: values.yaml
+
+# Update other sections based on your custom values
+image: '{{ .Values.image }}'  # Use values.yaml for image
+namespace: '{{ .Values.namespace }}'  # Use values.yaml for namespace
+
