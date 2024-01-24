@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	// gin-swagger middleware
+	// swagger embed files
 	"github.com/venkatvghub/k8s-ns/managers"
 	"k8s.io/client-go/kubernetes"
 )
@@ -15,6 +17,12 @@ type NSClonerRequestBody struct {
 
 var nsRequestBody NSClonerRequestBody
 
+// @Summary List namespaces
+// @Description get namespaces
+// @ID get-namespaces
+// @Produce json
+// @Success 200 {array} string
+// @Router /namespaces [get]
 func GetNS(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	namespaceNames, err := managers.GetNS(clientset)
@@ -25,6 +33,13 @@ func GetNS(c *gin.Context) {
 	c.JSON(http.StatusOK, namespaceNames)
 }
 
+// @Summary List deployments in a namespace
+// @Description get deployments by namespace
+// @ID get-deployments
+// @Produce json
+// @Param namespace path string true "Namespace"
+// @Success 200 {array} string
+// @Router /namespaces/{namespace}/deployments [get]
 func GetDeployments(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	namespace := c.Param("namespace")
@@ -40,6 +55,14 @@ func GetDeployments(c *gin.Context) {
 	}
 }
 
+// @Summary Clone a namespace
+// @Description clone namespace by source namespace
+// @ID clone-namespace
+// @Accept json
+// @Produce json
+// @Param sourceNamespace path string true "Source Namespace"
+// @Success 200
+// @Router /namespaces/{sourceNamespace}/clone [post]
 func CloneNamespace(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	sourceNamespace := c.Param("sourceNamespace")

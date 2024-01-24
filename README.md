@@ -23,4 +23,11 @@ curl -X POST -H "Content-Type: application/json" -d '{"targetNamespace": "target
 Apply the file `rolebinding.yaml` onto the cluster for giving full operations to this service account for running the code in cluster
 ```kubectl apply -f rolebinding.yaml```
 
+## Generating Documentation
+```
+go get -u github.com/swaggo/swag/cmd/swag
+
+```
+The Documentation is available in `docs/` folder
+
 

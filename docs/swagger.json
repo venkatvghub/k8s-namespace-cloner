@@ -1,0 +1,86 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/namespaces": {
+            "get": {
+                "description": "get namespaces",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "List namespaces",
+                "operationId": "get-namespaces",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/namespaces/{namespace}/deployments": {
+            "get": {
+                "description": "get deployments by namespace",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "List deployments in a namespace",
+                "operationId": "get-deployments",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/namespaces/{sourceNamespace}/clone": {
+            "post": {
+                "description": "clone namespace by source namespace",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Clone a namespace",
+                "operationId": "clone-namespace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Source Namespace",
+                        "name": "sourceNamespace",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        }
+    }
+}

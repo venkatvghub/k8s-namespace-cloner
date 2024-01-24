@@ -1,0 +1,56 @@
+info:
+  contact: {}
+paths:
+  /namespaces:
+    get:
+      description: get namespaces
+      operationId: get-namespaces
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List namespaces
+  /namespaces/{namespace}/deployments:
+    get:
+      description: get deployments by namespace
+      operationId: get-deployments
+      parameters:
+      - description: Namespace
+        in: path
+        name: namespace
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: List deployments in a namespace
+  /namespaces/{sourceNamespace}/clone:
+    post:
+      consumes:
+      - application/json
+      description: clone namespace by source namespace
+      operationId: clone-namespace
+      parameters:
+      - description: Source Namespace
+        in: path
+        name: sourceNamespace
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Clone a namespace
+swagger: "2.0"
