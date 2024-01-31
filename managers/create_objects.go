@@ -3,6 +3,7 @@ package managers
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+var ClonedServiceTypes = []v1.ServiceType{corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort, corev1.ServiceTypeExternalName}
 
 func CloneConfigMap(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
 	configMaps, err := clientset.CoreV1().ConfigMaps(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
@@ -143,10 +146,10 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 			continue
 		}
 		// Set desired image in container spec
-		/*desiredImage := "your-desired-image" // Replace with your specific image
-		for i := range deployment.Spec.Template.Spec.Containers {
-			deployment.Spec.Template.Spec.Containers[i].Image = desiredImage
-		}*/
+		//desiredImage := "your-desired-image" // Replace with your specific image
+		//for i := range deployment.Spec.Template.Spec.Containers {
+		//	deployment.Spec.Template.Spec.Containers[i].Image = desiredImage
+		//}
 
 		// Create deployment in target namespace
 		_, err = clientset.AppsV1().Deployments(targetNamespace).Create(context.TODO(), &appsv1.Deployment{
@@ -206,6 +209,10 @@ func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 	}
 
 	for _, service := range services.Items {
+		// Only close the allowed types
+		if !slices.Contains(ClonedServiceTypes, service.Spec.Type) {
+			continue
+		}
 		service.Spec.ClusterIP = ""           // Reset ClusterIP so that a new one is generated
 		service.Spec.ClusterIPs = []string{}  // Reset ClusterIPs so that a new one is generated
 		service.Spec.ExternalIPs = []string{} // Reset ExternalIPs so that a new one is generated
