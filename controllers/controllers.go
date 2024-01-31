@@ -1,7 +1,8 @@
 package controllers
 
 import (
-	"fmt"
+	"log"
+        "fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -71,7 +72,7 @@ func CloneNamespace(c *gin.Context) {
 		return
 	}
 	targetNamespace := nsRequestBody.TargetNamespace
-	fmt.Printf("Source Namespace:%s, Target Namespace:%s\n", sourceNamespace, targetNamespace)
+	log.Printf("Source Namespace:%s, Target Namespace:%s\n", sourceNamespace, targetNamespace)
 	// Implement the cloneResources function
 	// Clone namespace objects
 	err := managers.CloneNamespace(clientset, sourceNamespace, targetNamespace)

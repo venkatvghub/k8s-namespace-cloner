@@ -3,6 +3,7 @@ package managers
 import (
 	"context"
 	"fmt"
+	"log"
 	"slices"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ func CloneConfigMap(clientset *kubernetes.Clientset, sourceNamespace, targetName
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any ConfigMaps\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any ConfigMaps\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -35,11 +36,11 @@ func CloneConfigMap(clientset *kubernetes.Clientset, sourceNamespace, targetName
 		_, err := clientset.CoreV1().ConfigMaps(targetNamespace).Get(context.TODO(), configMap.Name, metav1.GetOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			// Handle unexpected errors
-			fmt.Printf("Error checking for existing configmap %s: %v\n", configMap.Name, err)
+			log.Printf("Error checking for existing configmap %s: %v\n", configMap.Name, err)
 			return err
 		} else if err == nil {
 			// ConfigMap already exists, skip creation
-			fmt.Printf("ConfigMap %s already exists in %s, skipping creation\n", configMap.Name, targetNamespace)
+			log.Printf("ConfigMap %s already exists in %s, skipping creation\n", configMap.Name, targetNamespace)
 			continue
 		}
 		_, err = clientset.CoreV1().ConfigMaps(targetNamespace).Create(context.TODO(), &v1.ConfigMap{
@@ -64,7 +65,7 @@ func CloneConfigMap(clientset *kubernetes.Clientset, sourceNamespace, targetName
 		}
 
 		// ConfigMap exists, return success immediately (no status to check)
-		fmt.Printf("ConfigMap %s is ready\n", configMap.Name)
+		log.Printf("ConfigMap %s is ready\n", configMap.Name)
 	}
 	return nil
 }
@@ -74,7 +75,7 @@ func CloneSecret(clientset *kubernetes.Clientset, sourceNamespace, targetNamespa
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any Secrets\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any Secrets\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -87,11 +88,11 @@ func CloneSecret(clientset *kubernetes.Clientset, sourceNamespace, targetNamespa
 		_, err := clientset.CoreV1().Secrets(targetNamespace).Get(context.TODO(), secret.Name, metav1.GetOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			// Handle unexpected errors
-			fmt.Printf("Error checking for existing secret %s: %v\n", secret.Name, err)
+			log.Printf("Error checking for existing secret %s: %v\n", secret.Name, err)
 			return err
 		} else if err == nil {
 			// Secret already exists, skip creation
-			fmt.Printf("Secret %s already exists in %s, skipping creation\n", secret.Name, targetNamespace)
+			log.Printf("Secret %s already exists in %s, skipping creation\n", secret.Name, targetNamespace)
 			continue
 		}
 		_, err = clientset.CoreV1().Secrets(targetNamespace).Create(context.TODO(), &v1.Secret{
@@ -115,7 +116,7 @@ func CloneSecret(clientset *kubernetes.Clientset, sourceNamespace, targetNamespa
 		}
 
 		// Secret exists, return success immediately (no status to check)
-		fmt.Printf("Secret %s is ready\n", secret.Name)
+		log.Printf("Secret %s is ready\n", secret.Name)
 	}
 	return nil
 }
@@ -125,7 +126,7 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any Deployments\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any Deployments\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -138,11 +139,11 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 		_, err := clientset.AppsV1().Deployments(targetNamespace).Get(context.TODO(), deployment.Name, metav1.GetOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			// Handle unexpected errors
-			fmt.Printf("Error checking for existing deployment %s: %v\n", deployment.Name, err)
+			log.Printf("Error checking for existing deployment %s: %v\n", deployment.Name, err)
 			return err
 		} else if err == nil {
 			// Deployment already exists, skip creation
-			fmt.Printf("Deployment %s already exists in %s, skipping creation\n", deployment.Name, targetNamespace)
+			log.Printf("Deployment %s already exists in %s, skipping creation\n", deployment.Name, targetNamespace)
 			continue
 		}
 		// Set desired image in container spec
@@ -172,7 +173,7 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 
 			replicas := deployment.Status.ReadyReplicas
 			if replicas == *(deployment.Spec.Replicas) {
-				fmt.Printf("Deployment %s is ready with %d replicas\n", deployment.Name, replicas)
+				log.Printf("Deployment %s is ready with %d replicas\n", deployment.Name, replicas)
 				return nil
 			}
 
@@ -187,9 +188,9 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 
 			// Deployment is still in progress, wait and try again
 			time.Sleep(5 * time.Second) // Adjust the wait interval as needed
-			fmt.Printf("Waiting for deployment %s to be ready (%d/%d replicas)...\n", deployment.Name, replicas, *(deployment.Spec.Replicas))
+			log.Printf("Waiting for deployment %s to be ready (%d/%d replicas)...\n", deployment.Name, replicas, *(deployment.Spec.Replicas))
 		}
-		//fmt.Printf("Deployment %s cloned to %s with image %s\n", deployment.Name, targetNamespace, desiredImage)
+		//log.Printf("Deployment %s cloned to %s with image %s\n", deployment.Name, targetNamespace, desiredImage)
 	}
 	return nil
 }
@@ -199,7 +200,7 @@ func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any Services\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any Services\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -238,13 +239,13 @@ func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 
 			// Check if Service has a ClusterIP assigned (assume ready when ClusterIP is available)
 			if service.Spec.ClusterIP != "" {
-				fmt.Printf("Service %s is ready with ClusterIP %s\n", service.Name, service.Spec.ClusterIP)
+				log.Printf("Service %s is ready with ClusterIP %s\n", service.Name, service.Spec.ClusterIP)
 				return nil
 			}
 
 			// Service is still being created, wait and try again
 			time.Sleep(5 * time.Second) // Adjust wait interval as needed
-			fmt.Printf("Waiting for Service %s to be assigned a ClusterIP...\n", service.Name)
+			log.Printf("Waiting for Service %s to be assigned a ClusterIP...\n", service.Name)
 		}
 		// Service exists, return success immediately (no status to check)
 	}
@@ -256,7 +257,7 @@ func CloneCronJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any CronJobs\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any CronJobs\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -280,7 +281,7 @@ func CloneCronJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 		}
 
 		// CronJob exists, return success immediately (no status to check)
-		fmt.Printf("CronJob %s is ready\n", cronJob.Name)
+		log.Printf("CronJob %s is ready\n", cronJob.Name)
 	}
 	return nil
 }
@@ -290,7 +291,7 @@ func CloneJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any Jobs\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any Jobs\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -314,7 +315,7 @@ func CloneJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace
 		}
 
 		// Job exists, return success immediately (no status to check)
-		fmt.Printf("Job %s is ready\n", job.Name)
+		log.Printf("Job %s is ready\n", job.Name)
 	}
 	return nil
 }
@@ -346,7 +347,7 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any Statefulsets\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any Statefulsets\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -389,7 +390,7 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 
 			// Check if all replicas are ready
 			if statefulSet.Status.ReadyReplicas == *(statefulSet.Spec.Replicas) {
-				fmt.Printf("StatefulSet %s is ready with %d replicas\n", statefulSet.Name, statefulSet.Status.ReadyReplicas)
+				log.Printf("StatefulSet %s is ready with %d replicas\n", statefulSet.Name, statefulSet.Status.ReadyReplicas)
 				return nil
 			}
 
@@ -400,7 +401,7 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 
 			// StatefulSet is still rolling out, wait and try again
 			time.Sleep(5 * time.Second) // Adjust the wait interval as needed
-			fmt.Printf("Waiting for StatefulSet %s to be ready (%d/%d replicas)...\n", statefulSet.Name, statefulSet.Status.ReadyReplicas, *(statefulSet.Spec.Replicas))
+			log.Printf("Waiting for StatefulSet %s to be ready (%d/%d replicas)...\n", statefulSet.Name, statefulSet.Status.ReadyReplicas, *(statefulSet.Spec.Replicas))
 		}
 	}
 	return nil
@@ -411,7 +412,7 @@ func CloneIngresses(clientset *kubernetes.Clientset, sourceNamespace, targetName
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any Ingress\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any Ingress\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -435,7 +436,7 @@ func CloneIngresses(clientset *kubernetes.Clientset, sourceNamespace, targetName
 		}
 
 		// Ingress exists, return success immediately (no status to check)
-		fmt.Printf("Ingress %s is ready\n", ingress.Name)
+		log.Printf("Ingress %s is ready\n", ingress.Name)
 	}
 	return nil
 }
@@ -445,7 +446,7 @@ func ClonePDB(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any PodDisruptionBudgets\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any PodDisruptionBudgets\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -469,7 +470,7 @@ func ClonePDB(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 		}
 
 		// PDB exists, return success immediately (no status to check)
-		fmt.Printf("PodDisruptionBudget %s is ready\n", podDisruptionBudget.Name)
+		log.Printf("PodDisruptionBudget %s is ready\n", podDisruptionBudget.Name)
 	}
 	return nil
 }
@@ -479,7 +480,7 @@ func CloneHPA(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			fmt.Printf("Namespace %s does not have any HPA\n", sourceNamespace)
+			log.Printf("Namespace %s does not have any HPA\n", sourceNamespace)
 			return nil
 		} else {
 			// Error checking for CronJobs
@@ -503,7 +504,7 @@ func CloneHPA(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 		}
 
 		// HPA exists, return success immediately (no status to check)
-		fmt.Printf("HorizontalPodAutoscaler %s is ready\n", horizontalPodAutoscaler.Name)
+		log.Printf("HorizontalPodAutoscaler %s is ready\n", horizontalPodAutoscaler.Name)
 	}
 	return nil
 }
@@ -513,7 +514,7 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
 	_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			fmt.Printf("Namespace %s does not exist, nothing to delete\n", namespace)
+			log.Printf("Namespace %s does not exist, nothing to delete\n", namespace)
 			return nil
 		} else {
 			// Handle unexpected errors
@@ -532,7 +533,7 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
 		_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				fmt.Printf("Namespace %s deleted successfully\n", namespace)
+				log.Printf("Namespace %s deleted successfully\n", namespace)
 				return nil
 			} else {
 				return fmt.Errorf("Error checking for namespace deletion: %v", err)
@@ -540,7 +541,7 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
 		}
 
 		// Namespace still exists, wait and try again
-		fmt.Printf("Waiting for namespace %s to be deleted...\n", namespace)
+		log.Printf("Waiting for namespace %s to be deleted...\n", namespace)
 		time.Sleep(5 * time.Second) // Adjust the wait interval as needed
 	}
 }
@@ -554,7 +555,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 	}, metav1.CreateOptions{})
 
 	if err != nil && !strings.Contains(err.Error(), "AlreadyExists") {
-		fmt.Printf("Error creating namespace %s: %v\n", targetNamespace, err)
+		log.Printf("Error creating namespace %s: %v\n", targetNamespace, err)
 		return err
 	}
 
@@ -590,7 +591,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 
 	err = CloneServices(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
-		fmt.Printf("Error cloning Services: %v\n", err)
+		log.Printf("Error cloning Services: %v\n", err)
 		// Remove the Target Namespace
 		err = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
@@ -601,7 +602,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 
 	err = CloneCronJobs(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
-		fmt.Printf("Error cloning CronJobs: %v\n", err)
+		log.Printf("Error cloning CronJobs: %v\n", err)
 		// Remove the Target Namespace
 		err = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
@@ -612,7 +613,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 
 	err = CloneJobs(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
-		fmt.Printf("Error cloning Jobs: %v\n", err)
+		log.Printf("Error cloning Jobs: %v\n", err)
 		// Remove the Target Namespace
 		err = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
@@ -623,7 +624,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 
 	err = CloneSTS(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
-		fmt.Printf("Error cloning STS: %v\n", err)
+		log.Printf("Error cloning STS: %v\n", err)
 		// Remove the Target Namespace
 		err = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
@@ -634,7 +635,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 
 	err = CloneIngresses(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
-		fmt.Printf("Error cloning Ingress: %v\n", err)
+		log.Printf("Error cloning Ingress: %v\n", err)
 		// Remove the Target Namespace
 		err = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
@@ -645,7 +646,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 
 	err = ClonePDB(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
-		fmt.Printf("Error cloning PDB: %v\n", err)
+		log.Printf("Error cloning PDB: %v\n", err)
 		// Remove the Target Namespace
 		err = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
@@ -656,7 +657,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 
 	err = CloneHPA(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
-		fmt.Printf("Error cloning HPA: %v\n", err)
+		log.Printf("Error cloning HPA: %v\n", err)
 		// Remove the Target Namespace
 		err = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
@@ -671,6 +672,6 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 		fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
 		return err
 	}
-	fmt.Printf("Removed Namespace:%s\n", targetNamespace)*/
+	log.Printf("Removed Namespace:%s\n", targetNamespace)*/
 	return nil
 }

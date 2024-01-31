@@ -24,7 +24,7 @@ func GetNS(clientset *kubernetes.Clientset) ([]string, error) {
 		annotations := namespace.Annotations
 		if annotations != nil {
 			if _, ok := annotations[NS_CLONER_ANNOTATION]; ok {
-				//fmt.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
+				//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
 				if annotations[NS_CLONER_ANNOTATION] == "true" || annotations[NS_CLONER_ANNOTATION] == "True" {
 					namespaceNames = append(namespaceNames, namespace.Name)
 				}

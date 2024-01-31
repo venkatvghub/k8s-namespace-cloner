@@ -49,4 +49,12 @@ go get -u github.com/swaggo/swag/cmd/swag
 ```
 The Documentation is available in `docs/` folder
 
+## Running
+Start in development mode:
+
+`go run main.go`
+
+Start in Production Mode:
+`go run main.go -production`
+
 

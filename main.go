@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 
+	"github.com/gin-gonic/gin"
 	"github.com/venkatvghub/k8s-ns/router"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -16,6 +18,8 @@ func main() {
 	// Parse command-line arguments
 	inCluster := flag.Bool("in-cluster", false, "Run inside the cluster")
 	//kubeconfigPath := flag.String("kubeconfig", "", "Path to kubeconfig file")
+	// Define and parse the command line flag
+	production := flag.Bool("production", false, "Start server in production mode")
 	flag.Parse()
 
 	// Initialize Kubernetes client based on the command line argument
@@ -30,17 +34,25 @@ func main() {
 		config, err = clientcmd.BuildConfigFromFlags("", getKubeConfigPath())
 	}
 
+	// Set Gin to production mode if the command line flag is specified
+	if *production {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
+
 	if err != nil {
-		fmt.Printf("Error building Kubernetes configuration: %v\n", err)
+		log.Printf("Error building Kubernetes configuration: %v\n", err)
 		panic(fmt.Sprintf("Error creating Kubernetes client: %v", err))
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		fmt.Printf("Error creating Kubernetes clientset: %v\n", err)
+		log.Printf("Error creating Kubernetes clientset: %v\n", err)
 		panic(fmt.Sprintf("Error creating Kubernetes client: %v", err))
 	}
+
 	r := router.InitializeRoutes(clientset)
-	fmt.Printf("Startng server at port 8080\n")
+	log.Printf("Startng server at port 8080\n")
 	r.Run(":8080")
 
 }
