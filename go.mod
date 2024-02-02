@@ -4,6 +4,8 @@ go 1.21.6
 
 require (
 	github.com/gin-gonic/gin v1.9.1
+	github.com/swaggo/files v1.0.1
+	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.2
 	k8s.io/api v0.29.1
 	k8s.io/apimachinery v0.29.1
