@@ -14,7 +14,14 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-// @title     Kubernetes Namespace Cloner API
+// @title Kubernetes Namespace Cloner API
+// @version 3.0.0
+// @description Kubernetes Namespace Cloner API URI:<br>&nbsp;&nbsp;https://{nw-server-hostname}:8080/api/v1<br><br>
+// @contact name "VV"
+// @license name "No Copyrights" url "https://www.example.com"
+// @host localhost:8080
+// @BasePath /api/v1
+// @schemes http https
 func main() {
 
 	// Parse command-line arguments

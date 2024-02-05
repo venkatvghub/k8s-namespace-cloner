@@ -1,0 +1,46 @@
+name: Generate Swagger Documentation
+
+on:
+  push:
+    branches:
+      - '**'  # This specifies that the action should run on pushes to any branch
+  pull_request:
+    branches:
+      - '**'  # This specifies that the action should run on pull requests to any branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16'  # Set this to the node version you prefer
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.21'  # Set this to the Go version you prefer
+
+      - name: Install SwagGo (swag)
+        run: go install github.com/swaggo/swag/cmd/swag@latest
+
+      - name: Run Swag Init
+        run: ~/go/bin/swag init --parseDependency --parseInternal
+
+      - name: Install Widdershins
+        run: npm install -g widdershins
+
+      - name: Convert Swagger to Markdown
+        run: widdershins --search true --language_tabs 'shell:Shell' 'javascript:JavaScript' --summary docs/swagger.json -o docs/swagger.md
+
+      - name: Commit and Push if it's changed
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add docs/swagger.md
+          git commit -m "Update Swagger Documentation" || echo "No changes to commit"
+          git push origin || echo "No changes to commit"

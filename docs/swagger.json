@@ -1,23 +1,17 @@
 {
-    "swagger": "2.0",
-    "host": "localhost:8080",
-    "basePath": "/api/v1",
     "schemes": [
         "http",
         "https"
     ],
+    "swagger": "2.0",
     "info": {
-        "description": "Kunernetes Namespace Cloner API URI:<br>&nbsp;&nbsp;https://{nw-server-hostname}:8080/api/v1<br><br>",
-        "version": "3.0.0",
+        "description": "Kubernetes Namespace Cloner API URI:\u003cbr\u003e\u0026nbsp;\u0026nbsp;https://{nw-server-hostname}:8080/api/v1\u003cbr\u003e\u003cbr\u003e",
         "title": "Kubernetes Namespace Cloner API",
-        "contact": {
-            "name": "VV"
-        },
-        "license": {
-            "name": "No Copyrights",
-            "url": "https://www.example.com"
-        }
+        "contact": {},
+        "version": "3.0.0"
     },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
     "paths": {
         "/cloneNamespace": {
             "post": {
