@@ -140,15 +140,16 @@ func CloneSecret(clientset *kubernetes.Clientset, sourceNamespace, targetNamespa
 			log.Printf("Secret %s already exists in %s, skipping creation\n", secret.Name, targetNamespace)
 			continue
 		}
+
 		annotations := make(map[string]string)
 		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
 		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
 		annotations[TARGET_SECRET_ANNOTATION] = secret.Name
-
 		_, err = clientset.CoreV1().Secrets(targetNamespace).Create(context.TODO(), &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      secret.Name,
-				Namespace: targetNamespace,
+				Name:        secret.Name,
+				Namespace:   targetNamespace,
+				Annotations: annotations,
 			},
 			Data: secret.Data,
 		}, metav1.CreateOptions{})

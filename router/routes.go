@@ -17,7 +17,7 @@ func InitializeRoutes(clientset *kubernetes.Clientset) *gin.Engine {
 	v1.Use(middlewares.K8sClientSetMiddleware(clientset))
 	{
 		v1.GET("/namespaces", controllers.GetNS)
-		v1.GET("/namespaces/:namespace/deployments", controllers.GetDeployments)
+		//v1.GET("/namespaces/:namespace/deployments", controllers.GetDeployments)
 		v1.GET("/namespaces/:namespace/deployments/display", controllers.DisplayDeployments)
 		v1.GET("/namespaces/:namespace/secrets/display", controllers.DisplaySecrets)
 		v1.GET("/namespaces/:namespace/configmaps/display", controllers.DisplayConfigMap)

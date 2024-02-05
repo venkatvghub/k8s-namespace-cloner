@@ -65,7 +65,7 @@ func GetNS(c *gin.Context) {
 // @Param namespace path string true "Namespace name"
 // @Success 200 {array} string
 // @Router /namespaces/:namespace/deployments [get]
-func GetDeployments(c *gin.Context) {
+/*func GetDeployments(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	namespace := c.Param("namespace")
 	deployments, err := managers.GetDeploymentForNS(clientset, namespace)
@@ -78,7 +78,7 @@ func GetDeployments(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "No active deployments found"})
 	}
-}
+}*/
 
 // @Summary Clone a namespace
 // @Description Clone a namespace and its objects to a new namespace
@@ -135,7 +135,7 @@ func DisplayDeployments(c *gin.Context) {
 func DisplaySecrets(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	namespace := c.Param("namespace")
-	log.Printf("Display Secrets...")
+	//log.Printf("Display Secrets...")
 	yamlMap, err := managers.GetSecretYaml(clientset, namespace)
 	if err != nil {
 		log.Printf("Error:%v\n", err)

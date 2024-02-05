@@ -54,7 +54,7 @@ func validateSourceNamespace(clientset *kubernetes.Clientset, sourceNamespace st
 
 func validateDeploymentEliblity(clientset *kubernetes.Clientset, deployment *appsv1.Deployment) *Error {
 	// Check if the deployment is already cloned
-	annotations := deployment.Annotations
+	annotations := deployment.ObjectMeta.Annotations
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
 			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])

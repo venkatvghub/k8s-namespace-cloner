@@ -27,6 +27,17 @@ type Deployment struct {
 	Namespace string
 }
 
+type Container map[string]string
+
+type DeploymentDetail struct {
+	Name       string      `json:"name"`
+	Containers []Container `json:"containers"`
+}
+
+type DeploymentContainers struct {
+	Deployments []DeploymentDetail `json:"deployments"`
+}
+
 func GetNS(clientset *kubernetes.Clientset) ([]string, *Error) {
 	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -79,13 +90,13 @@ func GetDeploymentForNS(clientset *kubernetes.Clientset, namespace string) ([]De
 	return deploymentObjects, nil
 }
 
-func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (map[string]map[string]string, *Error) {
+func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (DeploymentContainers, *Error) {
 	deployments, err := getDeploymentsForNS(clientset, namespace)
+	deploymentContainers := DeploymentContainers{}
 	if err != nil {
-		return nil, err
+		return deploymentContainers, err
 	}
 
-	deploymentImages := make(map[string]map[string]string)
 	for _, deployment := range deployments.Items {
 		// Initialize the inner map for each deployment
 		// Only allow deployments that are cloned by this system using the annotations set
@@ -93,20 +104,25 @@ func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (map[s
 		if errObj != nil {
 			continue
 		}
-		containerImages := make(map[string]string)
-		for _, container := range deployment.Spec.Template.Spec.Containers {
-			containerImages[container.Name] = container.Image
+		d := DeploymentDetail{
+			Name: deployment.Name,
 		}
-		// Associate the container images map with the deployment name
-		deploymentImages[deployment.Name] = containerImages
+		containers := []Container{}
+		for _, container := range deployment.Spec.Template.Spec.Containers {
+			c := make(Container)
+			c[container.Name] = container.Image
+			containers = append(containers, c)
+		}
+		d.Containers = containers
+		deploymentContainers.Deployments = append(deploymentContainers.Deployments, d)
 	}
-	if len(deploymentImages) == 0 {
-		return nil, &Error{
+	if len(deploymentContainers.Deployments) == 0 {
+		return deploymentContainers, &Error{
 			Code:    http.StatusNotFound,
 			Message: "No Deployments found eligible for display",
 		}
 	}
-	return deploymentImages, nil
+	return deploymentContainers, nil
 }
 
 func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[string]map[string]string, *Error) {
@@ -243,10 +259,13 @@ func PatchDeploymentImage(clientset *kubernetes.Clientset, namespace string, dep
 		_, err := clientset.AppsV1().Deployments(namespace).Patch(context.TODO(), deployment.Name, types.JSONPatchType, patchBytes, metav1.PatchOptions{})
 		return err
 	})
-	return &Error{
-		Code:    http.StatusInternalServerError,
-		Message: retryErr.Error(),
+	if retryErr != nil {
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: retryErr.Error(),
+		}
 	}
+	return nil
 }
 
 func PatchSecret(clientset *kubernetes.Clientset, namespace string, secretName string, data map[string]interface{}) *Error {
@@ -298,10 +317,13 @@ func PatchSecret(clientset *kubernetes.Clientset, namespace string, secretName s
 		_, err := clientset.CoreV1().Secrets(namespace).Patch(context.TODO(), secret.Name, types.JSONPatchType, patchBytes, metav1.PatchOptions{})
 		return err
 	})
-	return &Error{
-		Code:    http.StatusInternalServerError,
-		Message: retryErr.Error(),
+	if retryErr != nil {
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: retryErr.Error(),
+		}
 	}
+	return nil
 }
 
 func PatchConfigMap(clientset *kubernetes.Clientset, namespace string, configMapName string, data map[string]string) *Error {
@@ -343,8 +365,12 @@ func PatchConfigMap(clientset *kubernetes.Clientset, namespace string, configMap
 		_, err := clientset.CoreV1().ConfigMaps(namespace).Patch(context.TODO(), configMap.Name, types.JSONPatchType, patchBytes, metav1.PatchOptions{})
 		return err
 	})
-	return &Error{
-		Code:    http.StatusInternalServerError,
-		Message: retryErr.Error(),
+	if retryErr != nil {
+		log.Printf("Retry Error:%v\n", retryErr)
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: retryErr.Error(),
+		}
 	}
+	return nil
 }
