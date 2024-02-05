@@ -3,7 +3,7 @@ name: Generate Swagger Documentation
 on:
   push:
     branches:
-      - '**'  # This specifies that the action should run on pushes to any branch
+      - 'main'  # This specifies that the action should run on pushes to main branch
   pull_request:
     branches:
       - '**'  # This specifies that the action should run on pull requests to any branch
