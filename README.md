@@ -35,10 +35,16 @@ Note: In case the above annotation isn't available in the source namespace, the 
 Clone the repository to your local machine:
 ```
 go run main.go
-curl http://localhost:8080//api/v1/namespaces ## List Namespaces
-curl http://localhost:8080/api/v1/namespaces/:namespace/deployments ## List Deployments for namespace
-curl -X POST -H "Content-Type: application/json" -d '{"targetNamespace": "targetNamespace"}' http://localhost:8080/api/v1/namespaces/:sourceNamespace/clone ## Clones the source namespace to a target namespace
 ```
+
+Generating Documentation in Markdown:
+`npm install -g widdershins
+widdershins --search false --language_tabs 'shell:Shell' 'javascript:JavaScript' --summary docs/swagger.json -o docs/swagger.md
+`
+
+## Routes:
+Use the swagger documentation at `docs/swagger.json` to load the routes. The following explains a bunch of routes. Route Documentation Available at [docs/swagger.md](docs/swagger.md)
+
 Apply the file `rolebinding.yaml` onto the cluster for giving full operations to this service account for running the code in cluster
 ```kubectl apply -f rolebinding.yaml```
 
