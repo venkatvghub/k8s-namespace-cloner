@@ -92,35 +92,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/namespaces/:namespace/deployments": {
-            "get": {
-                "description": "Get all deployments in the specified namespace",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Get deployments for a specific namespace",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Namespace name",
-                        "name": "namespace",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/namespaces/:namespace/deployments/display": {
             "get": {
                 "description": "Display all deployments in the specified namespace",

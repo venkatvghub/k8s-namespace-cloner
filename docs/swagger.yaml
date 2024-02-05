@@ -92,25 +92,6 @@ paths:
           schema:
             type: string
       summary: Display config maps for a specific namespace
-  /namespaces/:namespace/deployments:
-    get:
-      description: Get all deployments in the specified namespace
-      parameters:
-      - description: Namespace name
-        in: path
-        name: namespace
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      summary: Get deployments for a specific namespace
   /namespaces/:namespace/deployments/display:
     get:
       description: Display all deployments in the specified namespace

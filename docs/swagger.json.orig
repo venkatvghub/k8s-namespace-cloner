@@ -31,13 +31,129 @@
                 "summary": "Clone a namespace",
                 "parameters": [
                     {
-                        "description": "Namespace clone request body",
-                        "name": "body",
+                        "description": "Source namespace to clone from",
+                        "name": "sourceNamespace",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controllers.NSClonerRequestBody"
+                            "type": "string"
                         }
+                    },
+                    {
+                        "description": "Target namespace to clone to",
+                        "name": "targetNamespace",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/gin.H"
+                        }
+                    }
+                }
+            }
+        },
+        "/deployments/{namespace}": {
+            "get": {
+                "description": "Get all deployments in the specified namespace",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get deployments for a specific namespace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace name",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/displayConfigMap/{namespace}": {
+            "get": {
+                "description": "Display all config maps in the specified namespace",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Display config maps for a specific namespace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace name",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/displayDeployments/{namespace}": {
+            "get": {
+                "description": "Display all deployments in the specified namespace",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Display deployments for a specific namespace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace name",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/displaySecrets/{namespace}": {
+            "get": {
+                "description": "Display all secrets in the specified namespace",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Display secrets for a specific namespace",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace name",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -70,84 +186,6 @@
                 }
             }
         },
-        "/namespaces/:namespace/configmaps/display": {
-            "get": {
-                "description": "Display all config maps in the specified namespace",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Display config maps for a specific namespace",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Namespace name",
-                        "name": "namespace",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/namespaces/:namespace/deployments/display": {
-            "get": {
-                "description": "Display all deployments in the specified namespace",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Display deployments for a specific namespace",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Namespace name",
-                        "name": "namespace",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/namespaces/:namespace/secrets/display": {
-            "get": {
-                "description": "Display all secrets in the specified namespace",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Display secrets for a specific namespace",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Namespace name",
-                        "name": "namespace",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/updateConfigMap": {
             "post": {
                 "description": "Update a config map in a specific namespace",
@@ -160,8 +198,8 @@
                 "summary": "Update a config map",
                 "parameters": [
                     {
-                        "description": "ConfigMap Update Request Body",
-                        "name": "body",
+                        "description": "Config map patch request body",
+                        "name": "configMapPatchRequestBody",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -191,8 +229,8 @@
                 "summary": "Update deployment image",
                 "parameters": [
                     {
-                        "description": "Deployment Image Set Request Body",
-                        "name": "body",
+                        "description": "Deployment patch request body",
+                        "name": "deploymentPatchRequestBody",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -221,15 +259,6 @@
                 ],
                 "summary": "Update a secret",
                 "parameters": [
-                    {
-                        "description": "Secret Update Request Body",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controllers.SecretPatchRequestBody"
-                        }
-                    },
                     {
                         "description": "Secret patch request body",
                         "name": "secretPatchRequestBody",
@@ -286,17 +315,6 @@
                 }
             }
         },
-        "controllers.NSClonerRequestBody": {
-            "type": "object",
-            "properties": {
-                "sourceNamespace": {
-                    "type": "string"
-                },
-                "targetNamespace": {
-                    "type": "string"
-                }
-            }
-        },
         "controllers.SecretPatchRequestBody": {
             "type": "object",
             "properties": {
@@ -311,6 +329,10 @@
                     "type": "string"
                 }
             }
+        },
+        "gin.H": {
+            "type": "object",
+            "additionalProperties": {}
         }
     }
 }
