@@ -1,10 +1,70 @@
+definitions:
+  controllers.ConfigMapPatchRequestBody:
+    properties:
+      data:
+        additionalProperties:
+          type: string
+        type: object
+      name:
+        type: string
+      namespace:
+        type: string
+    type: object
+  controllers.DeploymentPatchRequestBody:
+    properties:
+      container:
+        type: string
+      deployment:
+        type: string
+      image:
+        type: string
+      namespace:
+        type: string
+    type: object
+  controllers.NSClonerRequestBody:
+    properties:
+      sourceNamespace:
+        type: string
+      targetNamespace:
+        type: string
+    type: object
+  controllers.SecretPatchRequestBody:
+    properties:
+      data:
+        additionalProperties: true
+        type: object
+      name:
+        type: string
+      namespace:
+        type: string
+    type: object
 info:
   contact: {}
+  title: Kubernetes Namespace Cloner API
 paths:
+  /cloneNamespace:
+    post:
+      consumes:
+      - application/json
+      description: Clone a namespace and its objects to a new namespace
+      parameters:
+      - description: Namespace clone request body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.NSClonerRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Clone a namespace
   /namespaces:
     get:
-      description: get namespaces
-      operationId: get-namespaces
+      description: Get all namespaces in the cluster
       produces:
       - application/json
       responses:
@@ -14,13 +74,12 @@ paths:
             items:
               type: string
             type: array
-      summary: List namespaces
-  /namespaces/{namespace}/deployments:
+      summary: Get all namespaces
+  /namespaces/:namespace/configmaps/display:
     get:
-      description: get deployments by namespace
-      operationId: get-deployments
+      description: Display all config maps in the specified namespace
       parameters:
-      - description: Namespace
+      - description: Namespace name
         in: path
         name: namespace
         required: true
@@ -31,20 +90,15 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              type: string
-            type: array
-      summary: List deployments in a namespace
-  /namespaces/{sourceNamespace}/clone:
-    post:
-      consumes:
-      - application/json
-      description: clone namespace by source namespace
-      operationId: clone-namespace
+            type: string
+      summary: Display config maps for a specific namespace
+  /namespaces/:namespace/deployments/display:
+    get:
+      description: Display all deployments in the specified namespace
       parameters:
-      - description: Source Namespace
+      - description: Namespace name
         in: path
-        name: sourceNamespace
+        name: namespace
         required: true
         type: string
       produces:
@@ -52,5 +106,90 @@ paths:
       responses:
         "200":
           description: OK
-      summary: Clone a namespace
+          schema:
+            type: string
+      summary: Display deployments for a specific namespace
+  /namespaces/:namespace/secrets/display:
+    get:
+      description: Display all secrets in the specified namespace
+      parameters:
+      - description: Namespace name
+        in: path
+        name: namespace
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Display secrets for a specific namespace
+  /updateConfigMap:
+    post:
+      consumes:
+      - application/json
+      description: Update a config map in a specific namespace
+      parameters:
+      - description: ConfigMap Update Request Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ConfigMapPatchRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Update a config map
+  /updateDeploymentImage:
+    post:
+      consumes:
+      - application/json
+      description: Update the image of a deployment in a specific namespace
+      parameters:
+      - description: Deployment Image Set Request Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.DeploymentPatchRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Update deployment image
+  /updateSecret:
+    post:
+      consumes:
+      - application/json
+      description: Update a secret in a specific namespace
+      parameters:
+      - description: Secret Update Request Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.SecretPatchRequestBody'
+      - description: Secret patch request body
+        in: body
+        name: secretPatchRequestBody
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.SecretPatchRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Update a secret
 swagger: "2.0"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"slices"
 	"strings"
 	"time"
@@ -18,49 +19,78 @@ import (
 
 var ClonedServiceTypes = []v1.ServiceType{corev1.ServiceTypeClusterIP, corev1.ServiceTypeNodePort, corev1.ServiceTypeExternalName}
 
-func CloneConfigMap(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
-	configMaps, err := clientset.CoreV1().ConfigMaps(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
+func getconfigmapforNS(clientset *kubernetes.Clientset, namespace string) (*v1.ConfigMapList, *Error) {
+	var configMaps *v1.ConfigMapList
+	configMaps, err := clientset.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			log.Printf("Namespace %s does not have any ConfigMaps\n", sourceNamespace)
-			return nil
+			errStr := fmt.Sprintf("Namespace %s does not have any ConfigMaps\n", namespace)
+			log.Printf(errStr)
+			return nil, nil
 		} else {
 			// Error checking for CronJobs
-			fmt.Println("Error checking for ConfigMaps:", err)
-			return err
+			log.Printf("Error checking for ConfigMaps:", err)
+			return configMaps, &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
+	return configMaps, nil
+}
 
+func CloneConfigMap(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
+	configMaps, err := getconfigmapforNS(clientset, sourceNamespace)
+	if err != nil {
+		return err
+	}
 	for _, configMap := range configMaps.Items {
 		_, err := clientset.CoreV1().ConfigMaps(targetNamespace).Get(context.TODO(), configMap.Name, metav1.GetOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			// Handle unexpected errors
 			log.Printf("Error checking for existing configmap %s: %v\n", configMap.Name, err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		} else if err == nil {
 			// ConfigMap already exists, skip creation
 			log.Printf("ConfigMap %s already exists in %s, skipping creation\n", configMap.Name, targetNamespace)
 			continue
 		}
+		annotations := make(map[string]string)
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_CM_ANNOTATION] = configMap.Name
 		_, err = clientset.CoreV1().ConfigMaps(targetNamespace).Create(context.TODO(), &v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      configMap.Name,
-				Namespace: targetNamespace,
+				Name:        configMap.Name,
+				Annotations: annotations,
+				Namespace:   targetNamespace,
 			},
 			Data: configMap.Data,
 		}, metav1.CreateOptions{})
 
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if ConfigMap exists
 		_, err = clientset.CoreV1().ConfigMaps(targetNamespace).Get(context.TODO(), configMap.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("ConfigMap %s not found in namespace %s", configMap.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusBadRequest,
+					Message: fmt.Sprintf("ConfigMap %s not found in namespace %s", configMap.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for ConfigMap %s: %v", configMap.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for ConfigMap %s: %v", configMap.Name, err),
+				}
 			}
 		}
 
@@ -70,48 +100,78 @@ func CloneConfigMap(clientset *kubernetes.Clientset, sourceNamespace, targetName
 	return nil
 }
 
-func CloneSecret(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
-	secrets, err := clientset.CoreV1().Secrets(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
+func getSecretsforNS(clientset *kubernetes.Clientset, namespace string) (*v1.SecretList, *Error) {
+	var secrets *v1.SecretList
+	secrets, err := clientset.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			log.Printf("Namespace %s does not have any Secrets\n", sourceNamespace)
-			return nil
+			errStr := fmt.Sprintf("Namespace %s does not have any Secrets\n", namespace)
+			log.Printf(errStr)
+			return nil, nil
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for Secrets:", err)
-			return err
+			return secrets, &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
+	return secrets, nil
+}
 
+func CloneSecret(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
+	secrets, err := getSecretsforNS(clientset, sourceNamespace)
+	if err != nil {
+		return err
+	}
 	for _, secret := range secrets.Items {
 		_, err := clientset.CoreV1().Secrets(targetNamespace).Get(context.TODO(), secret.Name, metav1.GetOptions{})
 		if err != nil && !errors.IsNotFound(err) {
 			// Handle unexpected errors
 			log.Printf("Error checking for existing secret %s: %v\n", secret.Name, err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		} else if err == nil {
 			// Secret already exists, skip creation
 			log.Printf("Secret %s already exists in %s, skipping creation\n", secret.Name, targetNamespace)
 			continue
 		}
+
+		annotations := make(map[string]string)
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_SECRET_ANNOTATION] = secret.Name
 		_, err = clientset.CoreV1().Secrets(targetNamespace).Create(context.TODO(), &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      secret.Name,
-				Namespace: targetNamespace,
+				Name:        secret.Name,
+				Namespace:   targetNamespace,
+				Annotations: annotations,
 			},
 			Data: secret.Data,
 		}, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if Secret exists
 		_, err = clientset.CoreV1().Secrets(targetNamespace).Get(context.TODO(), secret.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("Secret %s not found in namespace %s", secret.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusBadRequest,
+					Message: fmt.Sprintf("Secret %s not found in namespace %s", secret.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for Secret %s: %v", secret.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for Secret %s: %v", secret.Name, err),
+				}
 			}
 		}
 
@@ -121,18 +181,31 @@ func CloneSecret(clientset *kubernetes.Clientset, sourceNamespace, targetNamespa
 	return nil
 }
 
-func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
-	deployments, err := clientset.AppsV1().Deployments(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
+func getDeploymentsForNS(clientset *kubernetes.Clientset, namespace string) (*appsv1.DeploymentList, *Error) {
+	var deployments *appsv1.DeploymentList
+	deployments, err := clientset.AppsV1().Deployments(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Namespace doesn't have CronJobs, return successfully
-			log.Printf("Namespace %s does not have any Deployments\n", sourceNamespace)
-			return nil
+			errStr := fmt.Sprintf("Namespace %s does not have any Deployments\n", namespace)
+			log.Printf(errStr)
+			return nil, nil
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for Deployments:", err)
-			return err
+			return deployments, &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
+	}
+	return deployments, nil
+}
+
+func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
+	deployments, err := getDeploymentsForNS(clientset, sourceNamespace)
+	if err != nil {
+		return err
 	}
 
 	for _, deployment := range deployments.Items {
@@ -140,7 +213,10 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 		if err != nil && !errors.IsNotFound(err) {
 			// Handle unexpected errors
 			log.Printf("Error checking for existing deployment %s: %v\n", deployment.Name, err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		} else if err == nil {
 			// Deployment already exists, skip creation
 			log.Printf("Deployment %s already exists in %s, skipping creation\n", deployment.Name, targetNamespace)
@@ -153,22 +229,33 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 		//}
 
 		// Create deployment in target namespace
+		annotations := make(map[string]string)
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_DEPLOYMENT_ANNOTATION] = deployment.Name
 		_, err = clientset.AppsV1().Deployments(targetNamespace).Create(context.TODO(), &appsv1.Deployment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      deployment.Name,
-				Namespace: targetNamespace,
+				Name:        deployment.Name,
+				Namespace:   targetNamespace,
+				Annotations: annotations,
 			},
 			Spec: deployment.Spec,
 		}, metav1.CreateOptions{})
 
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Wait for deployment to be ready
 		for {
 			deployment, err := clientset.AppsV1().Deployments(targetNamespace).Get(context.TODO(), deployment.Name, metav1.GetOptions{})
 			if err != nil {
-				return fmt.Errorf("Error getting deployment status: %v", err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error getting deployment status: %v", err),
+				}
 			}
 
 			replicas := deployment.Status.ReadyReplicas
@@ -181,7 +268,10 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 			if deployment.Status.Conditions != nil {
 				for _, condition := range deployment.Status.Conditions {
 					if condition.Type == appsv1.DeploymentReplicaFailure && condition.Status == corev1.ConditionTrue {
-						return fmt.Errorf("Deployment %s has failed: %s", deployment.Name, condition.Reason)
+						return &Error{
+							Code:    http.StatusInternalServerError,
+							Message: fmt.Sprintf("Deployment %s has failed: %s", deployment.Name, condition.Reason),
+						}
 					}
 				}
 			}
@@ -195,7 +285,7 @@ func CloneDeployments(clientset *kubernetes.Clientset, sourceNamespace, targetNa
 	return nil
 }
 
-func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	services, err := clientset.CoreV1().Services(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -204,8 +294,11 @@ func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 			return nil
 		} else {
 			// Error checking for CronJobs
-			fmt.Println("Error checking for Services:", err)
-			return err
+			log.Printf("Error checking for Services:", err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
 
@@ -219,22 +312,35 @@ func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 		service.Spec.ExternalIPs = []string{} // Reset ExternalIPs so that a new one is generated
 		service.Spec.ExternalName = ""        // Reset ExternalName so that a new one is generated
 		service.Spec.LoadBalancerIP = ""      // Reset LoadBalancerIP so that a new one is generated
+
+		annotations := make(map[string]string)
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_SERVICE_ANNOTATION] = service.Name
+
 		_, err = clientset.CoreV1().Services(targetNamespace).Create(context.TODO(), &v1.Service{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      service.Name,
-				Namespace: targetNamespace,
+				Name:        service.Name,
+				Namespace:   targetNamespace,
+				Annotations: annotations,
 			},
 			Spec: service.Spec,
 		}, metav1.CreateOptions{})
 
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		for {
 			// Get the latest Service status
 			service, err := clientset.CoreV1().Services(targetNamespace).Get(context.TODO(), service.Name, metav1.GetOptions{})
 			if err != nil {
-				return fmt.Errorf("Error getting Service status: %v", err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error getting Service status: %v", err),
+				}
 			}
 
 			// Check if Service has a ClusterIP assigned (assume ready when ClusterIP is available)
@@ -252,7 +358,7 @@ func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 	return nil
 }
 
-func CloneCronJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func CloneCronJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	cronJobs, err := clientset.BatchV1beta1().CronJobs(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -262,21 +368,39 @@ func CloneCronJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for CronJobs:", err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
 	for _, cronJob := range cronJobs.Items {
+		annotations := make(map[string]string)
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_CRONJOB_ANNOTATION] = cronJob.Name
+		cronJob.ObjectMeta.Annotations = annotations
+
 		_, err = clientset.BatchV1beta1().CronJobs(targetNamespace).Create(context.TODO(), &cronJob, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if CronJob exists
 		_, err := clientset.BatchV1beta1().CronJobs(targetNamespace).Get(context.TODO(), cronJob.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("CronJob %s not found in namespace %s", cronJob.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("CronJob %s not found in namespace %s", cronJob.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for CronJob %s: %v", cronJob.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for CronJob %s: %v", cronJob.Name, err),
+				}
 			}
 		}
 
@@ -286,7 +410,7 @@ func CloneCronJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 	return nil
 }
 
-func CloneJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func CloneJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	jobs, err := clientset.BatchV1().Jobs(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -296,21 +420,40 @@ func CloneJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for Jobs:", err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
 	for _, job := range jobs.Items {
+
+		annotations := make(map[string]string)
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_JOB_ANNOTATION] = job.Name
+		job.ObjectMeta.Annotations = annotations
+
 		_, err = clientset.BatchV1().Jobs(targetNamespace).Create(context.TODO(), &job, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if Job exists
 		_, err := clientset.BatchV1().Jobs(targetNamespace).Get(context.TODO(), job.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("Job %s not found in namespace %s", job.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Job %s not found in namespace %s", job.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for Job %s: %v", job.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for Job %s: %v", job.Name, err),
+				}
 			}
 		}
 
@@ -342,7 +485,7 @@ func getStatefulSetFailureReason(statefulSet *appsv1.StatefulSet) string {
 }
 
 // TODO: Need to check this
-func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	statefulSets, err := clientset.AppsV1().StatefulSets(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -352,21 +495,33 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for Statefulsets:", err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
 	for _, statefulSet := range statefulSets.Items {
 		_, err = clientset.AppsV1().StatefulSets(targetNamespace).Create(context.TODO(), &statefulSet, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if StatefulSet exists
 		_, err := clientset.AppsV1().StatefulSets(targetNamespace).Get(context.TODO(), statefulSet.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("StatefulSet %s not found in namespace %s", statefulSet.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("StatefulSet %s not found in namespace %s", statefulSet.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for StatefulSet %s: %v", statefulSet.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for StatefulSet %s: %v", statefulSet.Name, err),
+				}
 			}
 		}
 
@@ -374,9 +529,15 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 		statefulSet, err := clientset.AppsV1().StatefulSets(targetNamespace).Get(context.TODO(), statefulSet.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("StatefulSet %s not found in namespace %s", statefulSet.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("StatefulSet %s not found in namespace %s", statefulSet.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for StatefulSet %s: %v", statefulSet.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for StatefulSet %s: %v", statefulSet.Name, err),
+				}
 			}
 		}
 
@@ -385,7 +546,10 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 			// Get the latest StatefulSet status
 			statefulSet, err = clientset.AppsV1().StatefulSets(targetNamespace).Get(context.TODO(), statefulSet.Name, metav1.GetOptions{})
 			if err != nil {
-				return fmt.Errorf("Error getting StatefulSet status: %v", err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error getting StatefulSet status: %v", err),
+				}
 			}
 
 			// Check if all replicas are ready
@@ -396,7 +560,11 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 
 			// Check for errors
 			if hasStatefulSetUpdateFailure(statefulSet) {
-				return fmt.Errorf("StatefulSet %s has failed: %s", statefulSet.Name, getStatefulSetFailureReason(statefulSet))
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("StatefulSet %s has failed: %s", statefulSet.Name, getStatefulSetFailureReason(statefulSet)),
+				}
+
 			}
 
 			// StatefulSet is still rolling out, wait and try again
@@ -407,7 +575,7 @@ func CloneSTS(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 	return nil
 }
 
-func CloneIngresses(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func CloneIngresses(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	ingresses, err := clientset.ExtensionsV1beta1().Ingresses(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -417,21 +585,38 @@ func CloneIngresses(clientset *kubernetes.Clientset, sourceNamespace, targetName
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for Ingress:", err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
 	for _, ingress := range ingresses.Items {
+		annotations := make(map[string]string)
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_INGRESS_ANNOTATION] = ingress.Name
+		ingress.ObjectMeta.Annotations = annotations
 		_, err = clientset.ExtensionsV1beta1().Ingresses(targetNamespace).Create(context.TODO(), &ingress, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if Ingress exists
 		_, err := clientset.ExtensionsV1beta1().Ingresses(targetNamespace).Get(context.TODO(), ingress.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("Ingress %s not found in namespace %s", ingress.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Ingress %s not found in namespace %s", ingress.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for Ingress %s: %v", ingress.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for Ingress %s: %v", ingress.Name, err),
+				}
 			}
 		}
 
@@ -441,7 +626,7 @@ func CloneIngresses(clientset *kubernetes.Clientset, sourceNamespace, targetName
 	return nil
 }
 
-func ClonePDB(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func ClonePDB(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	podDisruptionBudgets, err := clientset.PolicyV1beta1().PodDisruptionBudgets(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -451,21 +636,33 @@ func ClonePDB(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for PodDisruptionBudgets:", err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
 	for _, podDisruptionBudget := range podDisruptionBudgets.Items {
 		_, err = clientset.PolicyV1beta1().PodDisruptionBudgets(targetNamespace).Create(context.TODO(), &podDisruptionBudget, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if PDB exists
 		_, err := clientset.PolicyV1beta1().PodDisruptionBudgets(targetNamespace).Get(context.TODO(), podDisruptionBudget.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("PodDisruptionBudget %s not found in namespace %s", podDisruptionBudget.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("PodDisruptionBudget %s not found in namespace %s", podDisruptionBudget.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for PodDisruptionBudget %s: %v", podDisruptionBudget.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for PodDisruptionBudget %s: %v", podDisruptionBudget.Name, err),
+				}
 			}
 		}
 
@@ -475,7 +672,7 @@ func ClonePDB(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 	return nil
 }
 
-func CloneHPA(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func CloneHPA(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	horizontalPodAutoscalers, err := clientset.AutoscalingV1().HorizontalPodAutoscalers(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -485,21 +682,33 @@ func CloneHPA(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 		} else {
 			// Error checking for CronJobs
 			fmt.Println("Error checking for HPA:", err)
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 	}
 	for _, horizontalPodAutoscaler := range horizontalPodAutoscalers.Items {
 		_, err = clientset.AutoscalingV1().HorizontalPodAutoscalers(targetNamespace).Create(context.TODO(), &horizontalPodAutoscaler, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
 		}
 		// Check if HPA exists
 		_, err := clientset.AutoscalingV1().HorizontalPodAutoscalers(targetNamespace).Get(context.TODO(), horizontalPodAutoscaler.Name, metav1.GetOptions{})
 		if err != nil {
 			if errors.IsNotFound(err) {
-				return fmt.Errorf("HorizontalPodAutoscaler %s not found in namespace %s", horizontalPodAutoscaler.Name, targetNamespace)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("HorizontalPodAutoscaler %s not found in namespace %s", horizontalPodAutoscaler.Name, targetNamespace),
+				}
 			} else {
-				return fmt.Errorf("Error checking for HorizontalPodAutoscaler %s: %v", horizontalPodAutoscaler.Name, err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for HorizontalPodAutoscaler %s: %v", horizontalPodAutoscaler.Name, err),
+				}
 			}
 		}
 
@@ -509,7 +718,7 @@ func CloneHPA(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace 
 	return nil
 }
 
-func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
+func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) *Error {
 	// Check if namespace exists
 	_, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 	if err != nil {
@@ -518,14 +727,20 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
 			return nil
 		} else {
 			// Handle unexpected errors
-			return fmt.Errorf("Error checking for namespace %s: %v", namespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error checking for namespace %s: %v", namespace, err),
+			}
 		}
 	}
 
 	// Delete the namespace
 	err = clientset.CoreV1().Namespaces().Delete(context.TODO(), namespace, metav1.DeleteOptions{})
 	if err != nil {
-		return fmt.Errorf("Error deleting namespace %s: %v", namespace, err)
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("Error deleting namespace %s: %v", namespace, err),
+		}
 	}
 
 	// Wait for namespace deletion to complete
@@ -536,7 +751,10 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
 				log.Printf("Namespace %s deleted successfully\n", namespace)
 				return nil
 			} else {
-				return fmt.Errorf("Error checking for namespace deletion: %v", err)
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for namespace deletion: %v", err),
+				}
 			}
 		}
 
@@ -546,132 +764,182 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) error {
 	}
 }
 
-func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) error {
+func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	// Create the target namespace if it doesn't exist
+	annotations := make(map[string]string)
+	annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+	annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
 	_, err := clientset.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: targetNamespace,
+			Name:        targetNamespace,
+			Annotations: annotations,
 		},
 	}, metav1.CreateOptions{})
 
 	if err != nil && !strings.Contains(err.Error(), "AlreadyExists") {
-		log.Printf("Error creating namespace %s: %v\n", targetNamespace, err)
-		return err
+		errStr := fmt.Sprintf("Error creating namespace %s: %v\n", targetNamespace, err)
+		log.Printf(errStr)
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: errStr,
+		}
 	}
 
-	err = CloneConfigMap(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj := CloneConfigMap(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		// Remove the Target Namespace
 		// TODO: Probably move the namespace deletion to a go routine for returning faster?
-		err = RemoveNamespace(clientset, targetNamespace)
+		errObj = RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
-		return err
+		return errObj
 	}
-	err = CloneSecret(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj = CloneSecret(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
+		}
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("Error cloning Secrets: %v\n", err),
+		}
+	}
+
+	errObj = CloneDeployments(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
+		// Remove the Target Namespace
+		err := RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
 		return err
 	}
 
-	err = CloneDeployments(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
-		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
-		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
-		}
-		return err
-	}
-
-	err = CloneServices(clientset, sourceNamespace, targetNamespace)
+	errObj = CloneServices(clientset, sourceNamespace, targetNamespace)
 	if err != nil {
 		log.Printf("Error cloning Services: %v\n", err)
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
 		return err
 	}
 
-	err = CloneCronJobs(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj = CloneCronJobs(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		log.Printf("Error cloning CronJobs: %v\n", err)
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
 		return err
 	}
 
-	err = CloneJobs(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj = CloneJobs(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		log.Printf("Error cloning Jobs: %v\n", err)
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
 		return err
 	}
 
-	err = CloneSTS(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj = CloneSTS(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		log.Printf("Error cloning STS: %v\n", err)
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
 		return err
 	}
 
-	err = CloneIngresses(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj = CloneIngresses(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		log.Printf("Error cloning Ingress: %v\n", err)
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
 		return err
 	}
 
-	err = ClonePDB(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj = ClonePDB(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		log.Printf("Error cloning PDB: %v\n", err)
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
 		return err
 	}
 
-	err = CloneHPA(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
+	errObj = CloneHPA(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
 		log.Printf("Error cloning HPA: %v\n", err)
 		// Remove the Target Namespace
-		err = RemoveNamespace(clientset, targetNamespace)
+		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
-			fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
 		}
-		return err
 	}
 
 	// Enable the below for testing and cleanup
 	/*err = RemoveNamespace(clientset, targetNamespace)
 	if err != nil {
-		fmt.Errorf("Error removing namespace %s: %v\n", targetNamespace, err)
+		fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err)
 		return err
 	}
 	log.Printf("Removed Namespace:%s\n", targetNamespace)*/
 	return nil
+}
+
+// Helper function to find the index of a container in a deployment
+func findContainerIndex(deployment *appsv1.Deployment, containerName string) int {
+	for i, container := range deployment.Spec.Template.Spec.Containers {
+		if container.Name == containerName {
+			return i
+		}
+	}
+	return -1 // Container not found
 }

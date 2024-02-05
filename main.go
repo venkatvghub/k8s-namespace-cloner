@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/venkatvghub/k8s-ns/docs"
 	"github.com/venkatvghub/k8s-ns/router"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -13,6 +14,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
+// @title     Kubernetes Namespace Cloner API
 func main() {
 
 	// Parse command-line arguments
