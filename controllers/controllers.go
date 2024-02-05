@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	// gin-swagger middleware
 	// swagger embed files
-	"github.com/venkatvghub/k8s-ns/managers"
+	"github.com/venkatvghub/k8s-namespace-cloner/managers"
 	"k8s.io/client-go/kubernetes"
 )
 
