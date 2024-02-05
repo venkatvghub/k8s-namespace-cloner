@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/venkatvghub/k8s-ns/controllers"
-	"github.com/venkatvghub/k8s-ns/middlewares"
+	"github.com/venkatvghub/k8s-namespace-cloner/controllers"
+	"github.com/venkatvghub/k8s-namespace-cloner/middlewares"
 	"k8s.io/client-go/kubernetes"
 )
 

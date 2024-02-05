@@ -6,8 +6,8 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/venkatvghub/k8s-ns/docs"
-	"github.com/venkatvghub/k8s-ns/router"
+	_ "github.com/venkatvghub/k8s-namespace-cloner/docs"
+	"github.com/venkatvghub/k8s-namespace-cloner/router"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
