@@ -8,7 +8,7 @@ language_clients:
   - javascript: ""
 toc_footers: []
 includes: []
-search: false
+search: true
 highlight_theme: darkula
 headingLevel: 2
 
@@ -20,15 +20,13 @@ headingLevel: 2
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
-Kunernetes Namespace Cloner API URI:<br>&nbsp;&nbsp;https://{nw-server-hostname}:8080/api/v1<br><br>
+Kubernetes Namespace Cloner API URI:<br>&nbsp;&nbsp;https://{nw-server-hostname}:8080/api/v1<br><br>
 
 Base URLs:
 
 * <a href="http://localhost:8080/api/v1">http://localhost:8080/api/v1</a>
 
 * <a href="https://localhost:8080/api/v1">https://localhost:8080/api/v1</a>
-
-License: <a href="https://www.example.com">No Copyrights</a>
 
 <h1 id="kubernetes-namespace-cloner-api-default">Default</h1>
 

@@ -35,7 +35,7 @@ jobs:
         run: npm install -g widdershins
 
       - name: Convert Swagger to Markdown
-        run: widdershins --search true --language_tabs 'shell:Shell' 'javascript:JavaScript' docs/swagger.json -o docs/swagger.md
+        run: widdershins --search true --language_tabs 'shell:Shell' 'javascript:JavaScript' --summary docs/swagger.json -o docs/swagger.md
 
       - name: Commit and Push if it's changed
         run: |
