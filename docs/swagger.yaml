@@ -1,3 +1,4 @@
+basePath: /api/v1
 definitions:
   controllers.ConfigMapPatchRequestBody:
     properties:
@@ -38,9 +39,12 @@ definitions:
       namespace:
         type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: Kubernetes Namespace Cloner API URI:<br>&nbsp;&nbsp;https://{nw-server-hostname}:8080/api/v1<br><br>
   title: Kubernetes Namespace Cloner API
+  version: 3.0.0
 paths:
   /cloneNamespace:
     post:
@@ -192,4 +196,7 @@ paths:
           schema:
             type: string
       summary: Update a secret
+schemes:
+- http
+- https
 swagger: "2.0"
