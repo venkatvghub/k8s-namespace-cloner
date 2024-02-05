@@ -13,27 +13,27 @@ import (
 )
 
 type NSClonerRequestBody struct {
-	SourceNamespace string `json:"sourceNamespace"`
+	//SourceNamespace string `json:"sourceNamespace"`
 	TargetNamespace string `json:"targetNamespace"`
 }
 
 type DeploymentPatchRequestBody struct {
-	Image      string `json:"image"`
-	Deployment string `json:"deployment"`
-	Container  string `json:"container"`
-	Namespace  string `json:"namespace"`
+	Image string `json:"image"`
+	//Deployment string `json:"deployment"`
+	Container string `json:"container"`
+	Namespace string `json:"namespace"`
 }
 
 type SecretPatchRequestBody struct {
-	Data       map[string]interface{} `json:"data"`
-	Namespace  string                 `json:"namespace"`
-	SecretName string                 `json:"name"`
+	Data      map[string]interface{} `json:"data"`
+	Namespace string                 `json:"namespace"`
+	//SecretName string                 `json:"name"`
 }
 
 type ConfigMapPatchRequestBody struct {
-	Data          map[string]string `json:"data"`
-	Namespace     string            `json:"namespace"`
-	ConfigMapName string            `json:"name"`
+	Data      map[string]string `json:"data"`
+	Namespace string            `json:"namespace"`
+	//ConfigMapName string            `json:"name"`
 }
 
 var (
@@ -65,7 +65,7 @@ func GetNS(c *gin.Context) {
 // @Param namespace path string true "Namespace name"
 // @Success 200 {array} string
 // @Router /namespaces/:namespace/deployments [get]
-/*func GetDeployments(c *gin.Context) {
+func GetDeployments(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	namespace := c.Param("namespace")
 	deployments, err := managers.GetDeploymentForNS(clientset, namespace)
@@ -78,7 +78,7 @@ func GetNS(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"message": "No active deployments found"})
 	}
-}*/
+}
 
 // @Summary Clone a namespace
 // @Description Clone a namespace and its objects to a new namespace
@@ -86,15 +86,16 @@ func GetNS(c *gin.Context) {
 // @Produce json
 // @Param body body NSClonerRequestBody true "Namespace clone request body"
 // @Success 200 {object} string
-// @Router /cloneNamespace [post]
+// @Router /namespaces/:namespace/cloneNamespace [post]
 func CloneNamespace(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	sourceNamespace := c.Param("namespace")
 	if err := c.BindJSON(&nsRequestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	targetNamespace := nsRequestBody.TargetNamespace
-	sourceNamespace := nsRequestBody.SourceNamespace
+	//sourceNamespace := nsRequestBody.SourceNamespace
 	log.Printf("Source Namespace:%s, Target Namespace:%s\n", sourceNamespace, targetNamespace)
 	// Implement the cloneResources function
 	// Clone namespace objects
@@ -171,16 +172,17 @@ func DisplayConfigMap(c *gin.Context) {
 // @Produce json
 // @Param body body DeploymentPatchRequestBody true "Deployment Image Set Request Body"
 // @Success 200 {object} string
-// @Router /updateDeploymentImage [post]
+// @Router /deployments/:deployment/updateDeploymentImage [post]
 func UpdateDeploymentImage(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	deployment := c.Param("deployment")
 	if err := c.BindJSON(&deploymentPatchRequestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	image := deploymentPatchRequestBody.Image
-	deployment := deploymentPatchRequestBody.Deployment
+	//deployment := deploymentPatchRequestBody.Deployment
 	container := deploymentPatchRequestBody.Container
 	namespace := deploymentPatchRequestBody.Namespace
 
@@ -200,16 +202,17 @@ func UpdateDeploymentImage(c *gin.Context) {
 // @Param body body SecretPatchRequestBody true "Secret Update Request Body"
 // @Param secretPatchRequestBody body SecretPatchRequestBody true "Secret patch request body"
 // @Success 200 {object} string
-// @Router /updateSecret [post]
+// @Router /secrets/:secret/updateSecret [post]
 func UpdateSecret(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	secretName := c.Param("secret")
 	if err := c.BindJSON(&secretPatchRequestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	secretData := secretPatchRequestBody.Data
 	namespace := secretPatchRequestBody.Namespace
-	secretName := secretPatchRequestBody.SecretName
+	//secretName := secretPatchRequestBody.SecretName
 	//log.Printf("Patch Secret...")
 	err := managers.PatchSecret(clientset, namespace, secretName, secretData)
 	if err != nil {
@@ -225,16 +228,17 @@ func UpdateSecret(c *gin.Context) {
 // @Produce json
 // @Param body body ConfigMapPatchRequestBody true "ConfigMap Update Request Body"
 // @Success 200 {object} string
-// @Router /updateConfigMap [post]
+// @Router /configmaps/:configmap/updateConfigMap [post]
 func UpdateConfigMap(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	configMapName := c.Param("configmap")
 	if err := c.BindJSON(&configMapPatchRequestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	configMapData := configMapPatchRequestBody.Data
 	namespace := configMapPatchRequestBody.Namespace
-	configMapName := configMapPatchRequestBody.ConfigMapName
+	//configMapName := configMapPatchRequestBody.ConfigMapName
 	//log.Printf("Patch ConfigMap...")
 	err := managers.PatchConfigMap(clientset, namespace, configMapName, configMapData)
 	if err != nil {

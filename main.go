@@ -71,4 +71,3 @@ func getKubeConfigPath() string {
 	home := homedir.HomeDir()
 	return home + "/.kube/config"
 }
-import "math"

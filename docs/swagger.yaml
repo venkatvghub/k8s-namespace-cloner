@@ -6,16 +6,13 @@ definitions:
         additionalProperties:
           type: string
         type: object
-      name:
-        type: string
       namespace:
         type: string
     type: object
   controllers.DeploymentPatchRequestBody:
     properties:
       container:
-        type: string
-      deployment:
+        description: Deployment string `json:"deployment"`
         type: string
       image:
         type: string
@@ -24,9 +21,8 @@ definitions:
     type: object
   controllers.NSClonerRequestBody:
     properties:
-      sourceNamespace:
-        type: string
       targetNamespace:
+        description: SourceNamespace string `json:"sourceNamespace"`
         type: string
     type: object
   controllers.SecretPatchRequestBody:
@@ -34,8 +30,6 @@ definitions:
       data:
         additionalProperties: true
         type: object
-      name:
-        type: string
       namespace:
         type: string
     type: object
@@ -46,7 +40,60 @@ info:
   title: Kubernetes Namespace Cloner API
   version: 3.0.0
 paths:
-  /cloneNamespace:
+  /configmaps/:configmap/updateConfigMap:
+    post:
+      consumes:
+      - application/json
+      description: Update a config map in a specific namespace
+      parameters:
+      - description: ConfigMap Update Request Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.ConfigMapPatchRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Update a config map
+  /deployments/:deployment/updateDeploymentImage:
+    post:
+      consumes:
+      - application/json
+      description: Update the image of a deployment in a specific namespace
+      parameters:
+      - description: Deployment Image Set Request Body
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/controllers.DeploymentPatchRequestBody'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Update deployment image
+  /namespaces:
+    get:
+      description: Get all namespaces in the cluster
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: Get all namespaces
+  /namespaces/:namespace/cloneNamespace:
     post:
       consumes:
       - application/json
@@ -66,19 +113,6 @@ paths:
           schema:
             type: string
       summary: Clone a namespace
-  /namespaces:
-    get:
-      description: Get all namespaces in the cluster
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      summary: Get all namespaces
   /namespaces/:namespace/configmaps/display:
     get:
       description: Display all config maps in the specified namespace
@@ -96,6 +130,25 @@ paths:
           schema:
             type: string
       summary: Display config maps for a specific namespace
+  /namespaces/:namespace/deployments:
+    get:
+      description: Get all deployments in the specified namespace
+      parameters:
+      - description: Namespace name
+        in: path
+        name: namespace
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      summary: Get deployments for a specific namespace
   /namespaces/:namespace/deployments/display:
     get:
       description: Display all deployments in the specified namespace
@@ -130,47 +183,7 @@ paths:
           schema:
             type: string
       summary: Display secrets for a specific namespace
-  /updateConfigMap:
-    post:
-      consumes:
-      - application/json
-      description: Update a config map in a specific namespace
-      parameters:
-      - description: ConfigMap Update Request Body
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.ConfigMapPatchRequestBody'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Update a config map
-  /updateDeploymentImage:
-    post:
-      consumes:
-      - application/json
-      description: Update the image of a deployment in a specific namespace
-      parameters:
-      - description: Deployment Image Set Request Body
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/controllers.DeploymentPatchRequestBody'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Update deployment image
-  /updateSecret:
+  /secrets/:secret/updateSecret:
     post:
       consumes:
       - application/json
