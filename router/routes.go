@@ -23,9 +23,9 @@ func InitializeRoutes(clientset *kubernetes.Clientset) *gin.Engine {
 		v1.GET("/namespaces/:namespace/configmaps/display", controllers.DisplayConfigMap)
 
 		v1.POST("/namespaces/:namespace/cloneNamespace", controllers.CloneNamespace)
-		v1.POST("/deployments/:deployment/updateDeploymentImage", controllers.UpdateDeploymentImage)
-		v1.POST("/secrets/:secret/updateSecret", controllers.UpdateSecret)
-		v1.POST("/configmaps/:configmap/updateConfigMap", controllers.UpdateConfigMap)
+		v1.POST("/deployments/:deployment", controllers.UpdateDeploymentImage)
+		v1.POST("/secrets/:secret", controllers.UpdateSecret)
+		v1.POST("/configmaps/:configmap", controllers.UpdateConfigMap)
 
 	}
 	// use ginSwagger middleware to serve the API docs
