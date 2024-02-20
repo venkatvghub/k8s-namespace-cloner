@@ -172,7 +172,7 @@ func DisplayConfigMap(c *gin.Context) {
 // @Produce json
 // @Param body body DeploymentPatchRequestBody true "Deployment Image Set Request Body"
 // @Success 200 {object} string
-// @Router /deployments/:deployment/updateDeploymentImage [post]
+// @Router /deployments/:deployment [post]
 func UpdateDeploymentImage(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	deployment := c.Param("deployment")
@@ -202,7 +202,7 @@ func UpdateDeploymentImage(c *gin.Context) {
 // @Param body body SecretPatchRequestBody true "Secret Update Request Body"
 // @Param secretPatchRequestBody body SecretPatchRequestBody true "Secret patch request body"
 // @Success 200 {object} string
-// @Router /secrets/:secret/updateSecret [post]
+// @Router /secrets/:secret [post]
 func UpdateSecret(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	secretName := c.Param("secret")
@@ -228,7 +228,7 @@ func UpdateSecret(c *gin.Context) {
 // @Produce json
 // @Param body body ConfigMapPatchRequestBody true "ConfigMap Update Request Body"
 // @Success 200 {object} string
-// @Router /configmaps/:configmap/updateConfigMap [post]
+// @Router /configmaps/:configmap [post]
 func UpdateConfigMap(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
 	configMapName := c.Param("configmap")
