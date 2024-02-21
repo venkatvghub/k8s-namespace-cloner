@@ -40,7 +40,7 @@ info:
   title: Kubernetes Namespace Cloner API
   version: 3.0.0
 paths:
-  /configmaps/:configmap/updateConfigMap:
+  /configmaps/:configmap:
     post:
       consumes:
       - application/json
@@ -60,7 +60,7 @@ paths:
           schema:
             type: string
       summary: Update a config map
-  /deployments/:deployment/updateDeploymentImage:
+  /deployments/:deployment:
     post:
       consumes:
       - application/json
@@ -183,7 +183,7 @@ paths:
           schema:
             type: string
       summary: Display secrets for a specific namespace
-  /secrets/:secret/updateSecret:
+  /secrets/:secret:
     post:
       consumes:
       - application/json

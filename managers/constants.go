@@ -6,17 +6,17 @@ import (
 )
 
 const (
-	NS_CLONER_ANNOTATION         = "cloner.k8s.io/enabled"
-	TARGET_NS_ANNOTATION         = "cloner.k8s.io/source-namespace"
-	TARGET_NS_ANNOTATION_ENABLED = "cloner.k8s.io/cloned"
-	TARGET_CM_ANNOTATION         = "cloner.k8s.io/source-configmap"
-	TARGET_SECRET_ANNOTATION     = "cloner.k8s.io/source-secret"
-	TARGET_DEPLOYMENT_ANNOTATION = "cloner.k8s.io/source-deployment"
-	TARGET_JOB_ANNOTATION        = "cloner.k8s.io/source-job"
-	TARGET_CRONJOB_ANNOTATION    = "cloner.k8s.io/source-cronjob"
-	TARGET_SERVICE_ANNOTATION    = "cloner.k8s.io/source-service"
-	TARGET_INGRESS_ANNOTATION    = "cloner.k8s.io/source-ingress"
-	TARGET_SA_ANNOTATION         = "cloner.k8s.io/source-serviceaccount"
+	NS_CLONER_ANNOTATION         = "cloner.io/enabled"
+	TARGET_NS_ANNOTATION         = "cloner.io/source-namespace"
+	TARGET_NS_ANNOTATION_ENABLED = "cloner.io/cloned"
+	TARGET_CM_ANNOTATION         = "cloner.io/source-configmap"
+	TARGET_SECRET_ANNOTATION     = "cloner.io/source-secret"
+	TARGET_DEPLOYMENT_ANNOTATION = "cloner.io/source-deployment"
+	TARGET_JOB_ANNOTATION        = "cloner.io/source-job"
+	TARGET_CRONJOB_ANNOTATION    = "cloner.io/source-cronjob"
+	TARGET_SERVICE_ANNOTATION    = "cloner.io/source-service"
+	TARGET_INGRESS_ANNOTATION    = "cloner.io/source-ingress"
+	TARGET_SA_ANNOTATION         = "cloner.io/source-serviceaccount"
 )
 
 // Useless debugging function. Just a placeholder and not needed for actual work
