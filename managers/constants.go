@@ -16,6 +16,7 @@ const (
 	TARGET_CRONJOB_ANNOTATION    = "cloner.k8s.io/source-cronjob"
 	TARGET_SERVICE_ANNOTATION    = "cloner.k8s.io/source-service"
 	TARGET_INGRESS_ANNOTATION    = "cloner.k8s.io/source-ingress"
+	TARGET_SA_ANNOTATION         = "cloner.k8s.io/source-serviceaccount"
 )
 
 // Useless debugging function. Just a placeholder and not needed for actual work

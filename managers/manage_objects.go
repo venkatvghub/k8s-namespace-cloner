@@ -626,6 +626,78 @@ func CloneIngresses(clientset *kubernetes.Clientset, sourceNamespace, targetName
 	return nil
 }
 
+func CloneSeviceAccount(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
+	serviceAccounts, err := clientset.CoreV1().ServiceAccounts(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Namespace doesn't have CronJobs, return successfully
+			log.Printf("Namespace %s does not have any ServiceAccounts\n", sourceNamespace)
+			return nil
+		} else {
+			// Error checking for CronJobs
+			fmt.Println("Error checking for ServiceAccounts:", err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+	}
+	for _, serviceAccount := range serviceAccounts.Items {
+		_, err := clientset.CoreV1().ServiceAccounts(targetNamespace).Get(context.TODO(), serviceAccount.Name, metav1.GetOptions{})
+		if err != nil && !errors.IsNotFound(err) {
+			// Handle unexpected errors
+			log.Printf("Error checking for existing serviceAccount %s: %v\n", serviceAccount.Name, err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		} else if err == nil {
+			// ServiceAccount already exists, skip creation
+			log.Printf("ServiceAccount %s already exists in %s, skipping creation\n", serviceAccount.Name, targetNamespace)
+			continue
+		}
+		annotations := make(map[string]string)
+		for key, value := range serviceAccount.Annotations {
+			annotations[key] = value
+		}
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_SA_ANNOTATION] = serviceAccount.Name
+
+		_, err = clientset.CoreV1().ServiceAccounts(targetNamespace).Create(context.TODO(), &v1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        serviceAccount.Name,
+				Namespace:   targetNamespace,
+				Annotations: annotations,
+			},
+		}, metav1.CreateOptions{})
+
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+		// Check if ServiceAccount exists
+		_, err = clientset.CoreV1().ServiceAccounts(targetNamespace).Get(context.TODO(), serviceAccount.Name, metav1.GetOptions{})
+		if err != nil {
+			if errors.IsNotFound(err) {
+				return &Error{
+					Code:    http.StatusBadRequest,
+					Message: fmt.Sprintf("", serviceAccount.Name, targetNamespace),
+				}
+			} else {
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: fmt.Sprintf("Error checking for ServiceAccount %s: %v", serviceAccount.Name, err),
+				}
+			}
+
+		}
+	}
+	return nil
+}
+
 func ClonePDB(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	podDisruptionBudgets, err := clientset.PolicyV1beta1().PodDisruptionBudgets(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -798,6 +870,20 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 		}
 		return errObj
 	}
+
+	errObj = CloneSeviceAccount(clientset, sourceNamespace, targetNamespace)
+	if errObj != nil {
+		// Remove the Target Namespace
+		err := RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
+		}
+		return errObj
+	}
+
 	errObj = CloneSecret(clientset, sourceNamespace, targetNamespace)
 	if errObj != nil {
 		// Remove the Target Namespace
