@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/configmaps/:configmap/updateConfigMap": {
+        "/configmaps/:configmap": {
             "post": {
                 "description": "Update a config map in a specific namespace",
                 "consumes": [
@@ -46,7 +46,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/deployments/:deployment/updateDeploymentImage": {
+        "/deployments/:deployment": {
             "post": {
                 "description": "Update the image of a deployment in a specific namespace",
                 "consumes": [
@@ -235,7 +235,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/secrets/:secret/updateSecret": {
+        "/secrets/:secret": {
             "post": {
                 "description": "Update a secret in a specific namespace",
                 "consumes": [

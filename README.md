@@ -10,7 +10,7 @@ The `k8s-namespace-cloner` tool facilitates the duplication of resources from on
 
 - Go 1.x
 - Kubernetes cluster access configured with `kubectl`
-- Annotate your namespaces to be cloned with this annotation `cloner.k8s.io/enabled:True`. E.g. Your namespace definition will look like the below:
+- Annotate your namespaces to be cloned with this annotation `cloner.io/enabled:True`. E.g. Your namespace definition will look like the below:
 ```
 apiVersion: v1
 kind: Namespace
