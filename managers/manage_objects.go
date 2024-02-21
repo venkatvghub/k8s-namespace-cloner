@@ -630,11 +630,11 @@ func CloneSeviceAccount(clientset *kubernetes.Clientset, sourceNamespace, target
 	serviceAccounts, err := clientset.CoreV1().ServiceAccounts(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Namespace doesn't have CronJobs, return successfully
+			// Namespace doesn't have ServiceAccounts, return successfully
 			log.Printf("Namespace %s does not have any ServiceAccounts\n", sourceNamespace)
 			return nil
 		} else {
-			// Error checking for CronJobs
+			// Error checking for ServiceAccounts
 			fmt.Println("Error checking for ServiceAccounts:", err)
 			return &Error{
 				Code:    http.StatusInternalServerError,
