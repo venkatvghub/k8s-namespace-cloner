@@ -1054,22 +1054,6 @@ func findContainerIndex(deployment *appsv1.Deployment, containerName string) int
 func applyKubeGreen(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.DynamicClient, clonedNamespace string) *Error {
 	// Define the SleepInfo CR object
 	name := fmt.Sprintf("%s-sleepinfo", clonedNamespace)
-	/*sleepInfoObj := &kubegreenv1alpha1.SleepInfo{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       KUBE_GREEN_KIND,
-			APIVersion: KUBE_GREEN_API_VERSION,
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name, // Set a unique name for your SleepInfo resource
-			Namespace: clonedNamespace,
-		},
-		Spec: kubegreenv1alpha1.SleepInfoSpec{
-			SleepTime:  KUBE_GREEN_SLEEP_TIME,
-			WakeUpTime: KUBE_GREEN_WAKE_TIME,
-			TimeZone:   KUBE_GREEN_TIMEZONE,
-		},
-	}*/
-
 	unstructuredMap := map[string]interface{}{
 		"apiVersion": KUBE_GREEN_API_VERSION,
 		"kind":       KUBE_GREEN_KIND,
