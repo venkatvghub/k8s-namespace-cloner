@@ -45,8 +45,8 @@ cd sample-charts
 helm template --dry-run sample-app sample-app -f sample-app/values.yaml > deploy.yaml
 kubectl apply -f deploy.yaml
 ```
-The above will create a new namespace called 'sample' (specified in the `sample-charts/sample-app/values.yaml`). In case you want to create more such namespaces/applications,
-simply change the value of the `namespace` in `values.yaml`, redo `helm template --dry-run sample-app sample-app -f sample-app/values.yaml > deploy.yaml && kubectl apply -f deploy.yaml` and see multiple namespaces
+- The above will create a new namespace called 'sample' (specified in the `sample-charts/sample-app/values.yaml`). 
+- In case you want to create more such namespaces/applications, simply change the values of namespace, POD and app in `values.yaml`, redo `helm template --dry-run sample-app sample-app -f sample-app/values.yaml > deploy.yaml && kubectl apply -f deploy.yaml` and see multiple namespaces
 
 Note: In case the above annotation isn't available in the source namespace, the cloner will return empty on the `/v1/namespaces` API.
 ### Kind Cluster & Kube Green Deployment

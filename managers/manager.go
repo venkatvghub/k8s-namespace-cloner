@@ -153,8 +153,9 @@ func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[strin
 			continue
 		}
 		dataMap := make(map[string]string)
-		for k, v := range secret.Data {
-			dataMap[k] = string(v)
+		for k, _ := range secret.Data {
+			// redact the secrets from being displayed
+			dataMap[k] = "<redacted>"
 		}
 		secretData[secret.Name] = dataMap
 	}
