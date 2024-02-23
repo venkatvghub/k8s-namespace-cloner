@@ -1,12 +1,12 @@
 # Customizable values for your Helm chart
 image: nginx:latest  # Image for the deployment
-replicaCount: 2  # Number of replicas for the deployment
+replicaCount: 1  # Number of replicas for the deployment
 servicePort: 80  # Port exposed by the service
-namespace: sample-app-namespace
+namespace: sample
 configMapData:  # Data for the ConfigMap
   config_key: sample-app-config
 secretData:  # Data for the Secret (base64-encoded)
   secret_key: cGFzc3dvcmQ=
 serviceAccount: 
-  name: sample-app-service-account
+  name: sample-service-account
 
