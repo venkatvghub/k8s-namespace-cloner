@@ -844,7 +844,6 @@ func CloneNamespace(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.D
 	annotations := make(map[string]string)
 	annotations[TARGET_NS_ANNOTATION] = sourceNamespace
 	annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
-	annotations[TARGET_NS_ANNOTATION] = targetNamespace
 
 	_, err := clientset.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
