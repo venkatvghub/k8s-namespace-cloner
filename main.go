@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/venkatvghub/k8s-namespace-cloner/docs"
 	"github.com/venkatvghub/k8s-namespace-cloner/router"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -55,12 +56,18 @@ func main() {
 		panic(fmt.Sprintf("Error creating Kubernetes client: %v", err))
 	}
 	clientset, err := kubernetes.NewForConfig(config)
+	//clientset, err := dynamic.NewForConfig(config)
 	if err != nil {
 		log.Printf("Error creating Kubernetes clientset: %v\n", err)
 		panic(fmt.Sprintf("Error creating Kubernetes client: %v", err))
 	}
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		log.Printf("Error creating Kubernetes dynamic client: %v\n", err)
+		panic(fmt.Sprintf("Error creating Kubernetes client: %v", err))
+	}
 
-	r := router.InitializeRoutes(clientset)
+	r := router.InitializeRoutes(clientset, dynamicClient)
 	log.Printf("Startng server at port 8080\n")
 	r.Run(":8080")
 

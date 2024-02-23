@@ -14,6 +14,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -836,11 +839,13 @@ func RemoveNamespace(clientset *kubernetes.Clientset, namespace string) *Error {
 	}
 }
 
-func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
+func CloneNamespace(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.DynamicClient, sourceNamespace, targetNamespace string) *Error {
 	// Create the target namespace if it doesn't exist
 	annotations := make(map[string]string)
 	annotations[TARGET_NS_ANNOTATION] = sourceNamespace
 	annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+	annotations[TARGET_NS_ANNOTATION] = targetNamespace
+
 	_, err := clientset.CoreV1().Namespaces().Create(context.TODO(), &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        targetNamespace,
@@ -857,7 +862,22 @@ func CloneNamespace(clientset *kubernetes.Clientset, sourceNamespace, targetName
 		}
 	}
 
-	errObj := CloneConfigMap(clientset, sourceNamespace, targetNamespace)
+	// Apply Kube Green Annotations to the entire namespace
+	errObj := applyKubeGreen(clientset, dynamicClientSet, targetNamespace)
+	if errObj != nil {
+		// Remove the Target Namespace
+		// TODO: Probably move the namespace deletion to a go routine for returning faster?
+		errObj = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
+		}
+		return errObj
+	}
+
+	errObj = CloneConfigMap(clientset, sourceNamespace, targetNamespace)
 	if errObj != nil {
 		// Remove the Target Namespace
 		// TODO: Probably move the namespace deletion to a go routine for returning faster?
@@ -1028,4 +1048,49 @@ func findContainerIndex(deployment *appsv1.Deployment, containerName string) int
 		}
 	}
 	return -1 // Container not found
+}
+
+// Helper function to apply Kube Green annotations to a namespace
+func applyKubeGreen(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.DynamicClient, clonedNamespace string) *Error {
+	// Define the SleepInfo CR object
+	name := fmt.Sprintf("%s-sleepinfo", clonedNamespace)
+	unstructuredMap := map[string]interface{}{
+		"apiVersion": KUBE_GREEN_API_VERSION,
+		"kind":       KUBE_GREEN_KIND,
+		"metadata": map[string]interface{}{
+			"name":      name,
+			"namespace": clonedNamespace,
+		},
+		"spec": map[string]interface{}{
+			"weekdays": "1-6",
+			"sleepAt":  KUBE_GREEN_SLEEP_TIME,
+			"wakeUpAt": KUBE_GREEN_WAKE_TIME,
+			"timeZone": KUBE_GREEN_TIMEZONE,
+		},
+	}
+
+	unstructuredObj := &unstructured.Unstructured{Object: unstructuredMap}
+	// Get the REST client for the SleepInfo resource
+	gvr := schema.GroupVersionResource{Group: "kube-green.com", Version: "v1alpha1", Resource: "sleepinfos"}
+	restClient := dynamicClientSet.Resource(gvr)
+
+	// Create the resource using the dynamic client
+	_, err := restClient.Namespace(clonedNamespace).Create(context.TODO(), unstructuredObj, metav1.CreateOptions{})
+	if err != nil {
+		log.Printf("Error Creating Kube Green Annotation %s For Namespace:s, Err: %v\n", clonedNamespace, err)
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}
+	/*createdSleepInfo, err := clientset.KubegreenV1alpha1().SleepInfos(clonedNamespace).Create(context.TODO(), sleepInfoObj, metav1.CreateOptions{})
+	if err != nil {
+		log.Printf("Error Creating Kube Green Annotation %s For Namespace:s, Err: %v\n", name, clonedNamespace, err)
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}*/
+	fmt.Printf("Created SleepInfo resource:%+v for namespace %+v\n", name, clonedNamespace)
+	return nil
 }

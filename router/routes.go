@@ -6,15 +6,16 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/venkatvghub/k8s-namespace-cloner/controllers"
 	"github.com/venkatvghub/k8s-namespace-cloner/middlewares"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
-func InitializeRoutes(clientset *kubernetes.Clientset) *gin.Engine {
+func InitializeRoutes(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.DynamicClient) *gin.Engine {
 	r := gin.Default()
 
 	v1 := r.Group("/api/v1")
 
-	v1.Use(middlewares.K8sClientSetMiddleware(clientset))
+	v1.Use(middlewares.K8sClientSetMiddleware(clientset, dynamicClientSet))
 	{
 		v1.GET("/namespaces", controllers.GetNS)
 		v1.GET("/namespaces/:namespace/deployments", controllers.GetDeployments)

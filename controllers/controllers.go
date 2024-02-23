@@ -6,10 +6,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
+
 	// gin-swagger middleware
 	// swagger embed files
 	"github.com/venkatvghub/k8s-namespace-cloner/managers"
-	"k8s.io/client-go/kubernetes"
 )
 
 type NSClonerRequestBody struct {
@@ -89,23 +91,28 @@ func GetDeployments(c *gin.Context) {
 // @Router /namespaces/:namespace/cloneNamespace [post]
 func CloneNamespace(c *gin.Context) {
 	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	dynamicClientSet := c.MustGet("dynamicClientSet").(*dynamic.DynamicClient)
 	sourceNamespace := c.Param("namespace")
 	if err := c.BindJSON(&nsRequestBody); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	targetNamespace := nsRequestBody.TargetNamespace
+	if sourceNamespace == targetNamespace {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Source and target namespaces cannot be the same"})
+		return
+	}
 	//sourceNamespace := nsRequestBody.SourceNamespace
 	log.Printf("Source Namespace:%s, Target Namespace:%s\n", sourceNamespace, targetNamespace)
 	// Implement the cloneResources function
 	// Clone namespace objects
-	err := managers.CloneNamespace(clientset, sourceNamespace, targetNamespace)
+	err := managers.CloneNamespace(clientset, dynamicClientSet, sourceNamespace, targetNamespace)
 	if err != nil {
 		c.JSON(err.Code, gin.H{"error": err.Message})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Namespace %s cloned to %s", sourceNamespace, targetNamespace)})
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Namespace %s cloned to %s. Setting Replicas to zero. When the deployment is ", sourceNamespace, targetNamespace)})
 }
 
 // @Summary Display deployments for a specific namespace
