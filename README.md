@@ -29,6 +29,7 @@ spec:
 ## Features
 - Clones a source namespace with the above annotation
 - For safety in public cloud environments, only clones services of type ClusterIP, ExternalName and NodePort. Does not clone Loadbalancer service types - as this will create external DNS names if allowed
+- Support for Enabling kube-green for adding custom annotations to sleep and wake up resources. Ref: https://kube-green.dev/docs/getting-started/
 
 ## Installation
 
