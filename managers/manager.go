@@ -25,12 +25,33 @@ var (
 type Deployment struct {
 	Name      string
 	Namespace string
+	POD       string
+	App       string
+}
+
+type Secret struct {
+	Name      string            `json:"name"`
+	Namespace string            `json:"namespace"`
+	Data      map[string]string `json:"data"`
+	POD       string            `json:"POD"`
+	App       string            `json:"app"`
+}
+
+type ConfigMap struct {
+	Name      string            `json:"name"`
+	Namespace string            `json:"namespace"`
+	Data      map[string]string `json:"data"`
+	POD       string            `json:"POD"`
+	App       string            `json:"app"`
 }
 
 type Container map[string]string
 
 type DeploymentDetail struct {
 	Name       string      `json:"name"`
+	Namespace  string      `json:"namespace"`
+	POD        string      `json:"pod"`
+	App        string      `json:"app"`
 	Containers []Container `json:"containers"`
 }
 
@@ -38,7 +59,7 @@ type DeploymentContainers struct {
 	Deployments []DeploymentDetail `json:"deployments"`
 }
 
-func GetNS(clientset *kubernetes.Clientset) ([]string, *Error) {
+func GetNS(clientset *kubernetes.Clientset) ([]map[string]string, *Error) {
 	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, &Error{
@@ -46,14 +67,18 @@ func GetNS(clientset *kubernetes.Clientset) ([]string, *Error) {
 			Message: err.Error(),
 		}
 	}
-	namespaceNames := []string{}
+	namespaceNames := []map[string]string{}
 	for _, namespace := range namespaces.Items {
 		annotations := namespace.Annotations
 		if annotations != nil {
 			if _, ok := annotations[NS_CLONER_ANNOTATION]; ok {
 				//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
 				if annotations[NS_CLONER_ANNOTATION] == "true" || annotations[NS_CLONER_ANNOTATION] == "True" {
-					namespaceNames = append(namespaceNames, namespace.Name)
+					nsMap := make(map[string]string)
+					nsMap["namespace"] = namespace.Name
+					nsMap["Pod"] = namespace.Labels["POD"]
+					nsMap["app"] = namespace.Labels["app"]
+					namespaceNames = append(namespaceNames, nsMap)
 				}
 			}
 		}
@@ -77,6 +102,8 @@ func GetDeploymentForNS(clientset *kubernetes.Clientset, namespace string) ([]De
 		if replicas > 0 {
 			d.Name = deployment.Name
 			d.Namespace = deployment.Namespace
+			d.POD = deployment.Labels["POD"]
+			d.App = deployment.Labels["app"]
 			deploymentObjects = append(deploymentObjects, d)
 		}
 
@@ -105,7 +132,10 @@ func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (Deplo
 			continue
 		}
 		d := DeploymentDetail{
-			Name: deployment.Name,
+			Name:      deployment.Name,
+			Namespace: deployment.Namespace,
+			POD:       deployment.Labels["POD"],
+			App:       deployment.Labels["app"],
 		}
 		containers := []Container{}
 		for _, container := range deployment.Spec.Template.Spec.Containers {
@@ -122,16 +152,18 @@ func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (Deplo
 			Message: "No Deployments found eligible for display",
 		}
 	}
+	fmt.Printf("Deployments:%+v\n", deploymentContainers)
 	return deploymentContainers, nil
 }
 
-func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[string]map[string]string, *Error) {
+func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) ([]Secret, *Error) {
 	secrets, err := getSecretsforNS(clientset, namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	secretData := make(map[string]map[string]string)
+	//secretData := make(map[string]map[string]string)
+	secretData := make([]Secret, 0)
 
 	for _, secret := range secrets.Items {
 		proceed := true
@@ -145,19 +177,35 @@ func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[strin
 				continue
 			}
 		}
+		// Ignore Kube green secrets as deployed by kube green operator
+		ownerReferences := secret.OwnerReferences
+		for _, ref := range ownerReferences {
+			if ref.APIVersion == KUBE_GREEN_API_VERSION && ref.Kind == KUBE_GREEN_KIND {
+				proceed = false
+				continue
+			}
+		}
 
 		if !proceed {
 			continue
 		}
+
 		if slices.Contains(excludeSecretPrefixes, secret.Name) {
 			continue
 		}
 		dataMap := make(map[string]string)
-		for k, _ := range secret.Data {
+		for k := range secret.Data {
 			// redact the secrets from being displayed
 			dataMap[k] = "<redacted>"
 		}
-		secretData[secret.Name] = dataMap
+		s := Secret{
+			Name:      secret.Name,
+			Namespace: secret.Namespace,
+			Data:      dataMap,
+			POD:       secret.Labels["POD"],
+			App:       secret.Labels["app"],
+		}
+		secretData = append(secretData, s)
 	}
 	if len(secretData) == 0 {
 		return nil, &Error{
@@ -168,12 +216,13 @@ func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[strin
 	return secretData, nil
 }
 
-func GetConfigMapYaml(clientset *kubernetes.Clientset, namespace string) (map[string]map[string]string, *Error) {
+func GetConfigMapYaml(clientset *kubernetes.Clientset, namespace string) ([]ConfigMap, *Error) {
 	configMaps, err := getconfigmapforNS(clientset, namespace)
 	if err != nil {
 		return nil, err
 	}
-	configMapData := make(map[string]map[string]string)
+	//configMapData := make(map[string]map[string]string)
+	configMapData := make([]ConfigMap, 0)
 	for _, configMap := range configMaps.Items {
 		proceed := true
 		errObj := validateConfigMapEliblity(clientset, &configMap)
@@ -196,7 +245,14 @@ func GetConfigMapYaml(clientset *kubernetes.Clientset, namespace string) (map[st
 		for k, v := range configMap.Data {
 			dataMap[k] = string(v)
 		}
-		configMapData[configMap.Name] = dataMap
+		c := ConfigMap{
+			Name:      configMap.Name,
+			Namespace: configMap.Namespace,
+			Data:      dataMap,
+			POD:       configMap.Labels["POD"],
+			App:       configMap.Labels["app"],
+		}
+		configMapData = append(configMapData, c)
 	}
 	if len(configMapData) == 0 {
 		return nil, &Error{
