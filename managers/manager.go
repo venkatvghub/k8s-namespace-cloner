@@ -29,6 +29,22 @@ type Deployment struct {
 	App       string
 }
 
+type Secret struct {
+	Name      string            `json:"name"`
+	Namespace string            `json:"namespace"`
+	Data      map[string]string `json:"data"`
+	POD       string            `json:"POD"`
+	App       string            `json:"app"`
+}
+
+type ConfigMap struct {
+	Name      string            `json:"name"`
+	Namespace string            `json:"namespace"`
+	Data      map[string]string `json:"data"`
+	POD       string            `json:"POD"`
+	App       string            `json:"app"`
+}
+
 type Container map[string]string
 
 type DeploymentDetail struct {
@@ -140,13 +156,14 @@ func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (Deplo
 	return deploymentContainers, nil
 }
 
-func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[string]map[string]string, *Error) {
+func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) ([]Secret, *Error) {
 	secrets, err := getSecretsforNS(clientset, namespace)
 	if err != nil {
 		return nil, err
 	}
 
-	secretData := make(map[string]map[string]string)
+	//secretData := make(map[string]map[string]string)
+	secretData := make([]Secret, 0)
 
 	for _, secret := range secrets.Items {
 		proceed := true
@@ -160,10 +177,19 @@ func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[strin
 				continue
 			}
 		}
+		// Ignore Kube green secrets as deployed by kube green operator
+		ownerReferences := secret.OwnerReferences
+		for _, ref := range ownerReferences {
+			if ref.APIVersion == KUBE_GREEN_API_VERSION && ref.Kind == KUBE_GREEN_KIND {
+				proceed = false
+				continue
+			}
+		}
 
 		if !proceed {
 			continue
 		}
+
 		if slices.Contains(excludeSecretPrefixes, secret.Name) {
 			continue
 		}
@@ -172,7 +198,14 @@ func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[strin
 			// redact the secrets from being displayed
 			dataMap[k] = "<redacted>"
 		}
-		secretData[secret.Name] = dataMap
+		s := Secret{
+			Name:      secret.Name,
+			Namespace: secret.Namespace,
+			Data:      dataMap,
+			POD:       secret.Labels["POD"],
+			App:       secret.Labels["app"],
+		}
+		secretData = append(secretData, s)
 	}
 	if len(secretData) == 0 {
 		return nil, &Error{
@@ -183,12 +216,13 @@ func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) (map[strin
 	return secretData, nil
 }
 
-func GetConfigMapYaml(clientset *kubernetes.Clientset, namespace string) (map[string]map[string]string, *Error) {
+func GetConfigMapYaml(clientset *kubernetes.Clientset, namespace string) ([]ConfigMap, *Error) {
 	configMaps, err := getconfigmapforNS(clientset, namespace)
 	if err != nil {
 		return nil, err
 	}
-	configMapData := make(map[string]map[string]string)
+	//configMapData := make(map[string]map[string]string)
+	configMapData := make([]ConfigMap, 0)
 	for _, configMap := range configMaps.Items {
 		proceed := true
 		errObj := validateConfigMapEliblity(clientset, &configMap)
@@ -211,7 +245,14 @@ func GetConfigMapYaml(clientset *kubernetes.Clientset, namespace string) (map[st
 		for k, v := range configMap.Data {
 			dataMap[k] = string(v)
 		}
-		configMapData[configMap.Name] = dataMap
+		c := ConfigMap{
+			Name:      configMap.Name,
+			Namespace: configMap.Namespace,
+			Data:      dataMap,
+			POD:       configMap.Labels["POD"],
+			App:       configMap.Labels["app"],
+		}
+		configMapData = append(configMapData, c)
 	}
 	if len(configMapData) == 0 {
 		return nil, &Error{
