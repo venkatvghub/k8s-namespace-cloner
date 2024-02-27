@@ -72,12 +72,22 @@ func GetNS(clientset *kubernetes.Clientset) ([]map[string]string, *Error) {
 		annotations := namespace.Annotations
 		if annotations != nil {
 			if _, ok := annotations[NS_CLONER_ANNOTATION]; ok {
-				//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
 				if annotations[NS_CLONER_ANNOTATION] == "true" || annotations[NS_CLONER_ANNOTATION] == "True" {
 					nsMap := make(map[string]string)
 					nsMap["namespace"] = namespace.Name
 					nsMap["Pod"] = namespace.Labels["POD"]
 					nsMap["app"] = namespace.Labels["app"]
+					nsMap["cloned"] = "false"
+					namespaceNames = append(namespaceNames, nsMap)
+				}
+			}
+			if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
+				if annotations[TARGET_NS_ANNOTATION_ENABLED] == "true" || annotations[TARGET_NS_ANNOTATION_ENABLED] == "True" {
+					nsMap := make(map[string]string)
+					nsMap["namespace"] = namespace.Name
+					nsMap["Pod"] = namespace.Labels["POD"]
+					nsMap["app"] = namespace.Labels["app"]
+					nsMap["cloned"] = "true"
 					namespaceNames = append(namespaceNames, nsMap)
 				}
 			}
