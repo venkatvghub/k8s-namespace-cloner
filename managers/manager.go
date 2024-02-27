@@ -53,6 +53,7 @@ type DeploymentDetail struct {
 	POD        string      `json:"pod"`
 	App        string      `json:"app"`
 	Containers []Container `json:"containers"`
+	Replicas   *int32      `json:replicas`
 }
 
 type DeploymentContainers struct {
@@ -146,6 +147,7 @@ func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (Deplo
 			Namespace: deployment.Namespace,
 			POD:       deployment.Labels["POD"],
 			App:       deployment.Labels["app"],
+			Replicas:  deployment.Spec.Replicas,
 		}
 		containers := []Container{}
 		for _, container := range deployment.Spec.Template.Spec.Containers {
