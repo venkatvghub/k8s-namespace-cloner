@@ -1,0 +1,49 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug with Air",
+            "type": "go",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.go",
+            "args": [],
+            "preLaunchTask": "Run Air",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        }
+    ],
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Run Air",
+                "type": "shell",
+                "command": "air",
+                "isBackground": true,
+                "problemMatcher": {
+                    "owner": "go",
+                    "fileLocation": ["relative", "${workspaceFolder}"],
+                    "pattern": {
+                        "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                        "file": 1,
+                        "line": 2,
+                        "column": 3,
+                        "severity": 4,
+                        "message": 5
+                    },
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "^\\[(\\d{2}:\\d{2}:\\d{2}|DEBUG)\\]\\s+watching\\s+.*",
+                        "endsPattern": "^\\[(\\d{2}:\\d{2}:\\d{2}|DEBUG)\\]\\s+building\\s+.*"
+                    }
+                },
+                "group": {
+                    "kind": "build",
+                    "isDefault": true
+                }
+            }
+        ]
+    }
+}
