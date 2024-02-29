@@ -53,7 +53,7 @@ type DeploymentDetail struct {
 	POD        string      `json:"pod"`
 	App        string      `json:"app"`
 	Containers []Container `json:"containers"`
-	Replicas   *int32      `json:replicas`
+	Replicas   *int32      `json:"replicas"`
 }
 
 type DeploymentContainers struct {
@@ -138,7 +138,7 @@ func GetDeploymentYaml(clientset *kubernetes.Clientset, namespace string) (Deplo
 	for _, deployment := range deployments.Items {
 		// Initialize the inner map for each deployment
 		// Only allow deployments that are cloned by this system using the annotations set
-		errObj := validateDeploymentEliblity(clientset, &deployment)
+		errObj := validateDeploymentEliblity(&deployment)
 		if errObj != nil {
 			continue
 		}
@@ -285,7 +285,7 @@ func PatchDeploymentImage(clientset *kubernetes.Clientset, namespace string, dep
 	}
 
 	// Only allow patching deployments that are cloned by this system using the annotations set
-	errObj := validateDeploymentEliblity(clientset, deployment)
+	errObj := validateDeploymentEliblity(deployment)
 	if errObj != nil {
 		return errObj
 	}
@@ -454,7 +454,7 @@ func ScaleupdownDeployment(clientset *kubernetes.Clientset, namespace string, de
 	}
 
 	// Only allow patching deployments that are cloned by this system using the annotations set
-	errObj := validateDeploymentEliblity(clientset, deployment)
+	errObj := validateDeploymentEliblity(deployment)
 	if errObj != nil {
 		return errObj
 	}
@@ -475,7 +475,7 @@ func ScaleupdownDeployment(clientset *kubernetes.Clientset, namespace string, de
 		}
 	} else {
 		if *deployment.Spec.Replicas == 0 {
-			log.Printf("Deployment:%s in Namespace:%s already scaled down. Skipping Scale down", deploymentStr, namespace, deployment.Spec.Replicas)
+			log.Printf("Deployment:%s in Namespace:%s already scaled down. Skipping Scale down", deploymentStr, namespace)
 			return nil
 		}
 
