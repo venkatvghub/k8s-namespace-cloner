@@ -941,20 +941,20 @@ func CloneNamespace(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.D
 		}
 	}
 
-	// // Apply Kube Green Annotations to the entire namespace
-	// errObj := applyKubeGreen(clientset, dynamicClientSet, targetNamespace)
-	// if errObj != nil {
-	// 	// Remove the Target Namespace
-	// 	// TODO: Probably move the namespace deletion to a go routine for returning faster?
-	// 	errObj = RemoveNamespace(clientset, targetNamespace)
-	// 	if err != nil {
-	// 		return &Error{
-	// 			Code:    http.StatusInternalServerError,
-	// 			Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
-	// 		}
-	// 	}
-	// 	return errObj
-	// }
+	// Apply Kube Green Annotations to the entire namespace
+	errObj := applyKubeGreen(clientset, dynamicClientSet, targetNamespace)
+	if errObj != nil {
+		// Remove the Target Namespace
+		// TODO: Probably move the namespace deletion to a go routine for returning faster?
+		errObj = RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
+		}
+		return errObj
+	}
 
 	errObj := CloneConfigMap(clientset, sourceNamespace, targetNamespace)
 	if errObj != nil {
