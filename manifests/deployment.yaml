@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloner-api
+  namespace: cloner
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloner-api
+  template:
+    metadata:
+      labels:
+        app: cloner-api
+    spec:
+      serviceAccountName: cloner-api-service-account
+      containers:
+      - name: cloner-api
+        image: ghcr.io/venkatvghub/k8s-namespace-cloner/k8s-namespace-cloner-backend:7643c4129b6f92a26f0fc428f853d220130c05c7
+        ports:
+        - containerPort: 8080
+
