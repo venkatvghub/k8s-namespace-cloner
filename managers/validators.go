@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -17,6 +18,7 @@ var errorCodes = map[string]int{
 	"DeploymentAnnotationMissing": http.StatusBadRequest,
 	"ConfigMapAnnotationMissing":  http.StatusBadRequest,
 	"SecretAnnotationMissing":     http.StatusBadRequest,
+	"CronjobAnnotationMissing":    http.StatusBadRequest,
 }
 
 type Error struct {
@@ -105,17 +107,40 @@ func validateConfigMapEliblity(clientset *kubernetes.Clientset, configMap *v1.Co
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
 			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
 			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true" || annotations[TARGET_NS_ANNOTATION_ENABLED] != "True") {
-				log.Printf("Namespace annotated")
+				//log.Printf("Namespace annotated")
 				return &Error{
 					Code:    errorCodes["ConfigMapAnnotationMissing"],
 					Message: "ConfigMap is not Annotated for operations",
 				}
 			}
 		} else {
-			log.Printf("Namespace Not annotated")
+			log.Printf("ConfigMap Not annotated")
 			return &Error{
 				Code:    errorCodes["ConfigMapAnnotationMissing"],
 				Message: "ConfigMap is not Annotated for operations",
+			}
+		}
+	}
+	return nil
+}
+
+func validateCronJobEliblity(clientset *kubernetes.Clientset, cronjob *batchv1.CronJob) *Error {
+	annotations := cronjob.ObjectMeta.Annotations
+	if annotations != nil {
+		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
+			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
+			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true" || annotations[TARGET_NS_ANNOTATION_ENABLED] != "True") {
+				//log.Printf("Cronjob annotated")
+				return &Error{
+					Code:    errorCodes["CronjobAnnotationMissing"],
+					Message: "Cronjob is not Annotated for operations",
+				}
+			}
+		} else {
+			log.Printf("Cronjob Not annotated")
+			return &Error{
+				Code:    errorCodes["CronjobAnnotationMissing"],
+				Message: "Cronjob is not Annotated for operations",
 			}
 		}
 	}

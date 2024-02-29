@@ -443,3 +443,103 @@ func PatchConfigMap(clientset *kubernetes.Clientset, namespace string, configMap
 	}
 	return nil
 }
+
+func ScaleupdownDeployment(clientset *kubernetes.Clientset, namespace string, deploymentStr string, scaleup bool) *Error {
+	deployment, err := clientset.AppsV1().Deployments(namespace).Get(context.TODO(), deploymentStr, metav1.GetOptions{})
+	if err != nil {
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}
+
+	// Only allow patching deployments that are cloned by this system using the annotations set
+	errObj := validateDeploymentEliblity(clientset, deployment)
+	if errObj != nil {
+		return errObj
+	}
+
+	if scaleup == true {
+		if *deployment.Spec.Replicas > 0 {
+			log.Printf("Deployment:%s in Namespace:%s already has %d replicas. Skipping Scale up", deploymentStr, namespace, deployment.Spec.Replicas)
+			return nil
+		}
+
+		*deployment.Spec.Replicas = 1
+		_, err := clientset.AppsV1().Deployments(namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+	} else {
+		if *deployment.Spec.Replicas == 0 {
+			log.Printf("Deployment:%s in Namespace:%s already scaled down. Skipping Scale down", deploymentStr, namespace, deployment.Spec.Replicas)
+			return nil
+		}
+
+		*deployment.Spec.Replicas = 0
+		_, err := clientset.AppsV1().Deployments(namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+	}
+
+	return nil
+}
+
+func ScaleupdownCronJobs(clientset *kubernetes.Clientset, namespace string, cronjobStr string, scaleup bool) *Error {
+	cronJob, err := clientset.BatchV1().CronJobs(namespace).Get(context.TODO(), cronjobStr, metav1.GetOptions{})
+	if err != nil {
+		return &Error{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		}
+	}
+
+	// Only allow patching cronjobs that are cloned by this system using the annotations set
+	errObj := validateCronJobEliblity(clientset, cronJob)
+	if errObj != nil {
+		return errObj
+	}
+
+	if scaleup {
+		// Activate the CronJob by ensuring that `suspend` is false
+		if cronJob.Spec.Suspend != nil && *cronJob.Spec.Suspend {
+			suspend := false
+			cronJob.Spec.Suspend = &suspend
+			_, err := clientset.BatchV1().CronJobs(namespace).Update(context.TODO(), cronJob, metav1.UpdateOptions{})
+			if err != nil {
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: err.Error(),
+				}
+			}
+			fmt.Printf("CronJob %s in namespace %s activated\n", cronjobStr, namespace)
+		} else {
+			fmt.Printf("CronJob %s in namespace %s is already active\n", cronjobStr, namespace)
+		}
+	} else {
+		// Deactivate the CronJob by setting `suspend` to true
+		if cronJob.Spec.Suspend == nil || *cronJob.Spec.Suspend == false {
+			suspend := true
+			cronJob.Spec.Suspend = &suspend
+			_, err := clientset.BatchV1().CronJobs(namespace).Update(context.TODO(), cronJob, metav1.UpdateOptions{})
+			if err != nil {
+				return &Error{
+					Code:    http.StatusInternalServerError,
+					Message: err.Error(),
+				}
+			}
+			log.Printf("CronJob %s in namespace %s deactivated\n", cronjobStr, namespace)
+		} else {
+			log.Printf("CronJob %s in namespace %s is already inactive\n", cronjobStr, namespace)
+		}
+	}
+
+	return nil
+}
