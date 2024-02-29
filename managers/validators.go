@@ -79,7 +79,6 @@ func validateSecretEliblity(secret *v1.Secret) *Error {
 	annotations := secret.ObjectMeta.Annotations
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
-			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
 			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true") {
 				return &Error{
 					Code:    errorCodes["SecretAnnotationMissing"],
