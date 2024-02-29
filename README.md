@@ -49,6 +49,17 @@ kubectl apply -f deploy.yaml
 - In case you want to create more such namespaces/applications, simply change the values of namespace, POD and app in `values.yaml`, redo `helm template --dry-run sample-app sample-app -f sample-app/values.yaml > deploy.yaml && kubectl apply -f deploy.yaml` and see multiple namespaces
 
 Note: In case the above annotation isn't available in the source namespace, the cloner will return empty on the `/v1/namespaces` API.
+
+### Istio installation for Creating Virtual services
+
+- Install istio CRDs, istiod and istio-ingress controller.
+```
+$ helm install istiod istio/istiod --namespace istio-system --create-namespace --version "~1.20.3" --wait
+$ helm install istiod istio/istiod --namespace istio-system --create-namespace --version "~1.20.3" --wait
+$ helm install istio-ingress istio/gateway --namespace istio-system --create-namespace --version "~1.20.3" --wait -f istio/values-gateway.yaml
+
+```
+
 ### Kind Cluster & Kube Green Deployment
 (Note: Instructions with Kind Cluster at https://kube-green.dev/docs/tutorials/kind/. This is for local development)
 - Ensure all the namespaces to be cloned have the `cloner.io/enabled:True` (Look at the annotations section above)
