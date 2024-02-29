@@ -956,7 +956,7 @@ func CloneNamespace(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.D
 		return errObj
 	}
 
-	errObj := CloneConfigMap(clientset, sourceNamespace, targetNamespace)
+	errObj = CloneConfigMap(clientset, sourceNamespace, targetNamespace)
 	if errObj != nil {
 		// Remove the Target Namespace
 		// TODO: Probably move the namespace deletion to a go routine for returning faster?
