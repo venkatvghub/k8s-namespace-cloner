@@ -179,7 +179,7 @@ func GetSecretYaml(clientset *kubernetes.Clientset, namespace string) ([]Secret,
 
 	for _, secret := range secrets.Items {
 		proceed := true
-		errObj := validateSecretEliblity(clientset, &secret)
+		errObj := validateSecretEliblity(&secret)
 		if errObj != nil {
 			continue
 		}
@@ -237,7 +237,7 @@ func GetConfigMapYaml(clientset *kubernetes.Clientset, namespace string) ([]Conf
 	configMapData := make([]ConfigMap, 0)
 	for _, configMap := range configMaps.Items {
 		proceed := true
-		errObj := validateConfigMapEliblity(clientset, &configMap)
+		errObj := validateConfigMapEliblity(&configMap)
 		//log.Printf("Error:%v\n", errObj)
 		if errObj != nil {
 			continue
@@ -346,7 +346,7 @@ func PatchSecret(clientset *kubernetes.Clientset, namespace string, secretName s
 			Message: err.Error(),
 		}
 	}
-	errObj := validateSecretEliblity(clientset, secret)
+	errObj := validateSecretEliblity(secret)
 	if errObj != nil {
 		return errObj
 	}
@@ -405,7 +405,7 @@ func PatchConfigMap(clientset *kubernetes.Clientset, namespace string, configMap
 		}
 	}
 
-	errObj := validateConfigMapEliblity(clientset, configMap)
+	errObj := validateConfigMapEliblity(configMap)
 	if errObj != nil {
 		return errObj
 	}
@@ -502,7 +502,7 @@ func ScaleupdownCronJobs(clientset *kubernetes.Clientset, namespace string, cron
 	}
 
 	// Only allow patching cronjobs that are cloned by this system using the annotations set
-	errObj := validateCronJobEliblity(clientset, cronJob)
+	errObj := validateCronJobEliblity(cronJob)
 	if errObj != nil {
 		return errObj
 	}

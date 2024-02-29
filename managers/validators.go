@@ -37,7 +37,6 @@ func validateSourceNamespace(clientset *kubernetes.Clientset, sourceNamespace st
 	annotations := namespace.Annotations
 	if annotations != nil {
 		if _, ok := annotations[NS_CLONER_ANNOTATION]; ok {
-			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
 			if !(annotations[NS_CLONER_ANNOTATION] == "true") {
 				return &Error{
 					Code:    errorCodes["NamespaceAnnotationMissing"],
@@ -59,7 +58,6 @@ func validateDeploymentEliblity(deployment *appsv1.Deployment) *Error {
 	annotations := deployment.ObjectMeta.Annotations
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
-			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
 			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true") {
 				return &Error{
 					Code:    errorCodes["DeploymentAnnotationMissing"],
@@ -76,7 +74,7 @@ func validateDeploymentEliblity(deployment *appsv1.Deployment) *Error {
 	return nil
 }
 
-func validateSecretEliblity(clientset *kubernetes.Clientset, secret *v1.Secret) *Error {
+func validateSecretEliblity(secret *v1.Secret) *Error {
 	// Check if the deployment is already cloned
 	annotations := secret.ObjectMeta.Annotations
 	if annotations != nil {
@@ -98,11 +96,9 @@ func validateSecretEliblity(clientset *kubernetes.Clientset, secret *v1.Secret) 
 	return nil
 }
 
-func validateConfigMapEliblity(clientset *kubernetes.Clientset, configMap *v1.ConfigMap) *Error {
-	// Check if the deployment is already cloned
-	//annotations := configMap.Annotations
+func validateConfigMapEliblity(configMap *v1.ConfigMap) *Error {
+	// Check if the Configmap is already cloned
 	annotations := configMap.ObjectMeta.Annotations
-	//log.Printf("Config Map:%s\n", configMap.Name)
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
 			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true") {
@@ -123,7 +119,7 @@ func validateConfigMapEliblity(clientset *kubernetes.Clientset, configMap *v1.Co
 	return nil
 }
 
-func validateCronJobEliblity(clientset *kubernetes.Clientset, cronjob *batchv1.CronJob) *Error {
+func validateCronJobEliblity(cronjob *batchv1.CronJob) *Error {
 	annotations := cronjob.ObjectMeta.Annotations
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
