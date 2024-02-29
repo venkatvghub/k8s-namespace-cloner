@@ -52,9 +52,10 @@ Note: In case the above annotation isn't available in the source namespace, the 
 
 ### Istio installation for Creating Virtual services
 
+- For kind clusters, install the metrics server(Ref: https://gist.github.com/sanketsudake/a089e691286bf2189bfedf295222bd43)
 - Install istio CRDs, istiod and istio-ingress controller.
 ```
-$ helm install istiod istio/istiod --namespace istio-system --create-namespace --version "~1.20.3" --wait
+$ helm repo add istio https://istio-release.storage.googleapis.com/charts
 $ helm install istiod istio/istiod --namespace istio-system --create-namespace --version "~1.20.3" --wait
 $ helm install istio-ingress istio/gateway --namespace istio-system --create-namespace --version "~1.20.3" --wait -f istio/values-gateway.yaml
 
