@@ -1,3 +1,7 @@
 .aider*
+/frontend/node_modules
+
+# production
+/frontend/build
 tmp
 .vscode
