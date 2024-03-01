@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Build the Go app
-RUN go build -o main .
+RUN CGO_ENABLED=0 go build -o main .
 
 # Use a minimal alpine image as the base image
 FROM alpine:latest
