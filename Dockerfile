@@ -23,4 +23,4 @@ COPY --from=builder /app/main /app/main
 ENTRYPOINT ["/app/main"]
 
 # Provide a default argument
-CMD ["--incluster=true"]
+CMD ["--in-cluster=true"]
