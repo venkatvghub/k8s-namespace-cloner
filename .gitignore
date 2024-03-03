@@ -3,3 +3,5 @@
 
 # production
 /frontend/build
+tmp
+.vscode

@@ -361,6 +361,86 @@ func CloneServices(clientset *kubernetes.Clientset, sourceNamespace, targetNames
 	return nil
 }
 
+func CloneIstioVirtualServices(dynamicClient dynamic.Interface, sourceNamespace, targetNamespace string) *Error {
+	// Define the GVR for Istio VirtualServices
+	virtualServiceGVR := schema.GroupVersionResource{
+		Group:    "networking.istio.io",
+		Version:  "v1alpha3",
+		Resource: "virtualservices",
+	}
+
+	// List VirtualServices in the source namespace
+	virtualServices, err := dynamicClient.Resource(virtualServiceGVR).Namespace(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		if errors.IsNotFound(err) {
+			// Namespace doesn't have VirtualServices, return successfully
+			log.Printf("Namespace %s does not have any VirtualServices\n", sourceNamespace)
+			return nil
+		} else {
+			// Error checking for VirtualServices
+			fmt.Println("Error checking for VirtualServices:", err)
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+	}
+
+	for _, item := range virtualServices.Items {
+		// Prepare the VirtualService for cloning: clear the resource version, set the namespace, and update annotations
+		item.SetResourceVersion("")
+		item.SetNamespace(targetNamespace)
+		annotations := item.GetAnnotations()
+		if annotations == nil {
+			annotations = make(map[string]string)
+		}
+		annotations[TARGET_NS_ANNOTATION] = sourceNamespace
+		annotations[TARGET_NS_ANNOTATION_ENABLED] = "true"
+		annotations[TARGET_VIRTUAL_SERVICE_ANNOTATION] = item.GetName()
+		item.SetAnnotations(annotations)
+
+		// Override all the hosts in Spec.Hosts by appending namespace name as a prefix
+		unstructuredSpec, exists, err := unstructured.NestedFieldNoCopy(item.Object, "spec")
+		if err != nil || !exists {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error accessing Spec for VirtualService %s: %v", item.GetName(), err),
+			}
+		}
+		spec := unstructuredSpec.(map[string]interface{})
+		hosts, exists, err := unstructured.NestedStringSlice(spec, "hosts")
+		if err != nil || !exists {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error accessing Hosts for VirtualService %s: %v", item.GetName(), err),
+			}
+		}
+		for i, host := range hosts {
+			hosts[i] = targetNamespace + "-" + host
+		}
+		if err := unstructured.SetNestedStringSlice(spec, hosts, "hosts"); err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error setting Hosts for VirtualService %s: %v", item.GetName(), err),
+			}
+		}
+		item.Object["spec"] = spec
+
+		// Create the VirtualService in the target namespace
+		_, err = dynamicClient.Resource(virtualServiceGVR).Namespace(targetNamespace).Create(context.TODO(), &item, metav1.CreateOptions{})
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
+
+		// Log success
+		log.Printf("VirtualService %s cloned successfully to namespace %s with updated hosts\n", item.GetName(), targetNamespace)
+	}
+	return nil
+}
+
 func CloneCronJobs(clientset *kubernetes.Clientset, sourceNamespace, targetNamespace string) *Error {
 	cronJobs, err := clientset.BatchV1beta1().CronJobs(sourceNamespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
@@ -933,8 +1013,22 @@ func CloneNamespace(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.D
 	}
 
 	errObj = CloneServices(clientset, sourceNamespace, targetNamespace)
-	if err != nil {
-		log.Printf("Error cloning Services: %v\n", err)
+	if errObj != nil {
+		log.Printf("Error cloning Services: %v\n", errObj)
+		// Remove the Target Namespace
+		err := RemoveNamespace(clientset, targetNamespace)
+		if err != nil {
+			return &Error{
+				Code:    http.StatusInternalServerError,
+				Message: fmt.Sprintf("Error removing namespace %s: %v\n", targetNamespace, err),
+			}
+		}
+		return err
+	}
+
+	errObj = CloneIstioVirtualServices(dynamicClientSet, sourceNamespace, targetNamespace)
+	if errObj != nil {
+		log.Printf("Error cloning Istio VirtualServices: %v\n", errObj)
 		// Remove the Target Namespace
 		err := RemoveNamespace(clientset, targetNamespace)
 		if err != nil {
