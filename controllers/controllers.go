@@ -202,6 +202,98 @@ func UpdateDeploymentImage(c *gin.Context) {
 	c.JSON(http.StatusOK, "Patched Deployment: "+deployment+" with image: "+image)
 }
 
+// @Summary Scale up a deployment
+// @Description Increase the replica count of a deployment in a specific namespace
+// @Accept json
+// @Produce json
+// @Param namespace path string true "Namespace name"
+// @Param deployment path string true "Deployment name"
+// @Success 200 {object} string "Successfully scaled up the deployment"
+// @Failure 400 {object} string "Bad request"
+// @Failure 500 {object} string "Internal server error"
+// @Router /namespaces/:namespace/deployments/:deployment/scaleup [post]
+func ScaleupDeployment(c *gin.Context) {
+	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	deployment := c.Param("deployment")
+	namespace := c.Param("namespace")
+	err := managers.ScaleupdownDeployment(clientset, namespace, deployment, true)
+	if err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Message})
+		return
+	}
+	c.JSON(http.StatusOK, "Scaled up Deployment: "+deployment+" in Namespace: "+namespace)
+}
+
+// @Summary Scale down a deployment
+// @Description Decrease the replica count of a deployment in a specific namespace
+// @Accept json
+// @Produce json
+// @Param namespace path string true "Namespace name"
+// @Param deployment path string true "Deployment name"
+// @Success 200 {object} string "Successfully scaled down the deployment"
+// @Failure 400 {object} string "Bad request"
+// @Failure 500 {object} string "Internal server error"
+// @Router /namespaces/:namespace/deployments/:deployment/scaledown [post]
+func ScaledownDeployment(c *gin.Context) {
+	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	deployment := c.Param("deployment")
+	namespace := c.Param("namespace")
+	err := managers.ScaleupdownDeployment(clientset, namespace, deployment, false)
+	if err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Message})
+		return
+	}
+	c.JSON(http.StatusOK, "Scaled down Deployment: "+deployment+" in Namespace: "+namespace)
+}
+
+// ScaleupCronJob godoc
+// @Summary Scale up a CronJob
+// @Description Increase the number of instances for a specified CronJob in a given namespace
+// @Tags CronJob
+// @Accept json
+// @Produce json
+// @Param namespace path string true "Namespace"
+// @Param cronJob path string true "CronJob Name"
+// @Success 200 {object} string "Successfully scaled up the CronJob"
+// @Failure 400 {object} string "Bad request"
+// @Failure 500 {object} string "Internal server error"
+// @Router /namespaces/{namespace}/cronjobs/{cronJob}/scaleup [post]
+func ScaleupCronJob(c *gin.Context) {
+	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	cronJob := c.Param("cronJob")
+	namespace := c.Param("namespace")
+	err := managers.ScaleupdownCronJobs(clientset, namespace, cronJob, true)
+	if err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Message})
+		return
+	}
+	c.JSON(http.StatusOK, "Scaled up CronJob: "+cronJob+" in Namespace: "+namespace)
+}
+
+// ScaleDownCronjob godoc
+// @Summary Scale down a CronJob
+// @Description Decrease the number of instances for a specified CronJob in a given namespace
+// @Tags CronJob
+// @Accept json
+// @Produce json
+// @Param namespace path string true "Namespace"
+// @Param cronJob path string true "CronJob Name"
+// @Success 200 {object} string "Successfully scaled down the CronJob"
+// @Failure 400 {object} string "Bad request"
+// @Failure 500 {object} string "Internal server error"
+// @Router /namespaces/{namespace}/cronjobs/{cronJob}/scaledown [post]
+func ScaleDownCronjob(c *gin.Context) {
+	clientset := c.MustGet("clientset").(*kubernetes.Clientset)
+	cronJob := c.Param("cronJob")
+	namespace := c.Param("namespace")
+	err := managers.ScaleupdownCronJobs(clientset, namespace, cronJob, false)
+	if err != nil {
+		c.JSON(err.Code, gin.H{"error": err.Message})
+		return
+	}
+	c.JSON(http.StatusOK, "Scaled down CronJob: "+cronJob+" in Namespace: "+namespace)
+}
+
 // @Summary Update a secret
 // @Description Update a secret in a specific namespace
 // @Accept json

@@ -181,6 +181,102 @@
                 }
             }
         },
+        "/namespaces/:namespace/deployments/:deployment/scaledown": {
+            "post": {
+                "description": "Decrease the replica count of a deployment in a specific namespace",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Scale down a deployment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace name",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deployment name",
+                        "name": "deployment",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully scaled down the deployment",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/namespaces/:namespace/deployments/:deployment/scaleup": {
+            "post": {
+                "description": "Increase the replica count of a deployment in a specific namespace",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Scale up a deployment",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace name",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deployment name",
+                        "name": "deployment",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully scaled up the deployment",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/namespaces/:namespace/deployments/display": {
             "get": {
                 "description": "Display all deployments in the specified namespace",
@@ -226,6 +322,108 @@
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/namespaces/{namespace}/cronjobs/{cronJob}/scaledown": {
+            "post": {
+                "description": "Decrease the number of instances for a specified CronJob in a given namespace",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob"
+                ],
+                "summary": "Scale down a CronJob",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CronJob Name",
+                        "name": "cronJob",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully scaled down the CronJob",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/namespaces/{namespace}/cronjobs/{cronJob}/scaleup": {
+            "post": {
+                "description": "Increase the number of instances for a specified CronJob in a given namespace",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "CronJob"
+                ],
+                "summary": "Scale up a CronJob",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Namespace",
+                        "name": "namespace",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "CronJob Name",
+                        "name": "cronJob",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully scaled up the CronJob",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
                             "type": "string"
                         }

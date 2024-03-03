@@ -149,6 +149,70 @@ paths:
               type: string
             type: array
       summary: Get deployments for a specific namespace
+  /namespaces/:namespace/deployments/:deployment/scaledown:
+    post:
+      consumes:
+      - application/json
+      description: Decrease the replica count of a deployment in a specific namespace
+      parameters:
+      - description: Namespace name
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment name
+        in: path
+        name: deployment
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully scaled down the deployment
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Scale down a deployment
+  /namespaces/:namespace/deployments/:deployment/scaleup:
+    post:
+      consumes:
+      - application/json
+      description: Increase the replica count of a deployment in a specific namespace
+      parameters:
+      - description: Namespace name
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: Deployment name
+        in: path
+        name: deployment
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully scaled up the deployment
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Scale up a deployment
   /namespaces/:namespace/deployments/display:
     get:
       description: Display all deployments in the specified namespace
@@ -183,6 +247,76 @@ paths:
           schema:
             type: string
       summary: Display secrets for a specific namespace
+  /namespaces/{namespace}/cronjobs/{cronJob}/scaledown:
+    post:
+      consumes:
+      - application/json
+      description: Decrease the number of instances for a specified CronJob in a given
+        namespace
+      parameters:
+      - description: Namespace
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: CronJob Name
+        in: path
+        name: cronJob
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully scaled down the CronJob
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Scale down a CronJob
+      tags:
+      - CronJob
+  /namespaces/{namespace}/cronjobs/{cronJob}/scaleup:
+    post:
+      consumes:
+      - application/json
+      description: Increase the number of instances for a specified CronJob in a given
+        namespace
+      parameters:
+      - description: Namespace
+        in: path
+        name: namespace
+        required: true
+        type: string
+      - description: CronJob Name
+        in: path
+        name: cronJob
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully scaled up the CronJob
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Scale up a CronJob
+      tags:
+      - CronJob
   /secrets/:secret:
     post:
       consumes:

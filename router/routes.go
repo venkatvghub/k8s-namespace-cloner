@@ -25,6 +25,10 @@ func InitializeRoutes(clientset *kubernetes.Clientset, dynamicClientSet *dynamic
 
 		v1.POST("/namespaces/:namespace/cloneNamespace", controllers.CloneNamespace)
 		v1.POST("/deployments/:deployment", controllers.UpdateDeploymentImage)
+		v1.POST("/namespaces/:namespace/deployments/:deployment/scaleup", controllers.ScaleupDeployment)
+		v1.POST("/namespaces/:namespace/deployments/:deployment/scaledown", controllers.ScaledownDeployment)
+		v1.POST("/namespaces/:namespace/cronjobs/:cronjob/scaledown", controllers.ScaleDownCronjob)
+		v1.POST("/namespaces/:namespace/cronjobs/:cronjob/scaleup", controllers.ScaleupCronJob)
 		v1.POST("/secrets/:secret", controllers.UpdateSecret)
 		v1.POST("/configmaps/:configmap", controllers.UpdateConfigMap)
 

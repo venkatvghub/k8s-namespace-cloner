@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -17,6 +18,7 @@ var errorCodes = map[string]int{
 	"DeploymentAnnotationMissing": http.StatusBadRequest,
 	"ConfigMapAnnotationMissing":  http.StatusBadRequest,
 	"SecretAnnotationMissing":     http.StatusBadRequest,
+	"CronjobAnnotationMissing":    http.StatusBadRequest,
 }
 
 type Error struct {
@@ -35,8 +37,7 @@ func validateSourceNamespace(clientset *kubernetes.Clientset, sourceNamespace st
 	annotations := namespace.Annotations
 	if annotations != nil {
 		if _, ok := annotations[NS_CLONER_ANNOTATION]; ok {
-			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
-			if !(annotations[NS_CLONER_ANNOTATION] == "true" || annotations[NS_CLONER_ANNOTATION] == "True") {
+			if !(annotations[NS_CLONER_ANNOTATION] == "true") {
 				return &Error{
 					Code:    errorCodes["NamespaceAnnotationMissing"],
 					Message: "Source namespace is not cloneable",
@@ -52,13 +53,12 @@ func validateSourceNamespace(clientset *kubernetes.Clientset, sourceNamespace st
 	return nil
 }
 
-func validateDeploymentEliblity(clientset *kubernetes.Clientset, deployment *appsv1.Deployment) *Error {
+func validateDeploymentEliblity(deployment *appsv1.Deployment) *Error {
 	// Check if the deployment is already cloned
 	annotations := deployment.ObjectMeta.Annotations
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
-			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
-			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true" || annotations[TARGET_NS_ANNOTATION_ENABLED] != "True") {
+			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true") {
 				return &Error{
 					Code:    errorCodes["DeploymentAnnotationMissing"],
 					Message: "Deployment is not Annotated for operations",
@@ -74,13 +74,12 @@ func validateDeploymentEliblity(clientset *kubernetes.Clientset, deployment *app
 	return nil
 }
 
-func validateSecretEliblity(clientset *kubernetes.Clientset, secret *v1.Secret) *Error {
+func validateSecretEliblity(secret *v1.Secret) *Error {
 	// Check if the deployment is already cloned
 	annotations := secret.ObjectMeta.Annotations
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
-			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
-			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true" || annotations[TARGET_NS_ANNOTATION_ENABLED] != "True") {
+			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true") {
 				return &Error{
 					Code:    errorCodes["SecretAnnotationMissing"],
 					Message: "Secret is not Annotated for Operations",
@@ -96,26 +95,44 @@ func validateSecretEliblity(clientset *kubernetes.Clientset, secret *v1.Secret) 
 	return nil
 }
 
-func validateConfigMapEliblity(clientset *kubernetes.Clientset, configMap *v1.ConfigMap) *Error {
-	// Check if the deployment is already cloned
-	//annotations := configMap.Annotations
+func validateConfigMapEliblity(configMap *v1.ConfigMap) *Error {
+	// Check if the Configmap is already cloned
 	annotations := configMap.ObjectMeta.Annotations
-	//log.Printf("Config Map:%s\n", configMap.Name)
 	if annotations != nil {
 		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
-			//log.Printf("Annotations:%v\n", annotations[NS_CLONER_ANNOTATION])
-			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true" || annotations[TARGET_NS_ANNOTATION_ENABLED] != "True") {
-				log.Printf("Namespace annotated")
+			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true") {
+				//log.Printf("Namespace annotated")
 				return &Error{
 					Code:    errorCodes["ConfigMapAnnotationMissing"],
 					Message: "ConfigMap is not Annotated for operations",
 				}
 			}
 		} else {
-			log.Printf("Namespace Not annotated")
+			log.Printf("ConfigMap Not annotated")
 			return &Error{
 				Code:    errorCodes["ConfigMapAnnotationMissing"],
 				Message: "ConfigMap is not Annotated for operations",
+			}
+		}
+	}
+	return nil
+}
+
+func validateCronJobEliblity(cronjob *batchv1.CronJob) *Error {
+	annotations := cronjob.ObjectMeta.Annotations
+	if annotations != nil {
+		if _, ok := annotations[TARGET_NS_ANNOTATION_ENABLED]; ok {
+			if !(annotations[TARGET_NS_ANNOTATION_ENABLED] == "true" || annotations[TARGET_NS_ANNOTATION_ENABLED] != "True") {
+				return &Error{
+					Code:    errorCodes["CronjobAnnotationMissing"],
+					Message: "Cronjob is not Annotated for operations",
+				}
+			}
+		} else {
+			log.Printf("Cronjob Not annotated")
+			return &Error{
+				Code:    errorCodes["CronjobAnnotationMissing"],
+				Message: "Cronjob is not Annotated for operations",
 			}
 		}
 	}
