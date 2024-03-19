@@ -13,6 +13,12 @@ import (
 func InitializeRoutes(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.DynamicClient) *gin.Engine {
 	r := gin.Default()
 
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	r.Use(cors.New(config))
+	
 	v1 := r.Group("/api/v1")
 
 	v1.Use(middlewares.K8sClientSetMiddleware(clientset, dynamicClientSet))
