@@ -1,0 +1,38 @@
+name: Build and Push Frontend Docker Images
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'frontend/**' # Only trigger it for frontend changes
+
+jobs:
+  build-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push frontend Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile.frontend
+          push: true
+          build-args: |
+            REACT_APP_K8S_CLONER_BACKEND_HOST=${{ secrets.REACT_APP_K8S_CLONER_BACKEND_HOST }}
+          tags: |
+            ghcr.io/${{ github.repository }}/k8s-namespace-cloner-frontend:${{ github.sha }}
+            ${{ github.ref == 'refs/heads/main' && 'ghcr.io/${{ github.repository }}/k8s-namespace-cloner-backend:latest' || '' }}
