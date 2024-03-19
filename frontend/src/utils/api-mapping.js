@@ -1,7 +1,7 @@
 const apiMapping = {
     getRequestObject: (feature, params) => {
         let requestObject = {};
-        const backendHost = 'http://localhost:8080';
+        const backendHost = process.env.REACT_APP_K8S_CLONER_BACKEND_HOST;
   
         switch (feature) {
             case 'FETCH_ALL_NAMESPACE_DEPLOYMENTS': {
