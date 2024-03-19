@@ -62,7 +62,6 @@ type DeploymentContainers struct {
 
 func GetNS(clientset *kubernetes.Clientset) ([]map[string]string, *Error) {
 	namespaces, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
-	fmt.Println(err.Error())
 	if err != nil {
 		return nil, &Error{
 			Code:    http.StatusInternalServerError,
