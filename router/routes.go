@@ -8,6 +8,7 @@ import (
 	"github.com/venkatvghub/k8s-namespace-cloner/middlewares"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"github.com/gin-contrib/cors"
 )
 
 func InitializeRoutes(clientset *kubernetes.Clientset, dynamicClientSet *dynamic.DynamicClient) *gin.Engine {
@@ -18,7 +19,7 @@ func InitializeRoutes(clientset *kubernetes.Clientset, dynamicClientSet *dynamic
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
 	r.Use(cors.New(config))
-	
+
 	v1 := r.Group("/api/v1")
 
 	v1.Use(middlewares.K8sClientSetMiddleware(clientset, dynamicClientSet))

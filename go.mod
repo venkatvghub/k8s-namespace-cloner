@@ -11,6 +11,7 @@ require (
 	k8s.io/api v0.29.2
 	k8s.io/apimachinery v0.29.2
 	k8s.io/client-go v0.29.2
+	github.com/gin-contrib/cors v1.3.1
 )
 
 require (
